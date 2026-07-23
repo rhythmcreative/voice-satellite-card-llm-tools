@@ -396,7 +396,14 @@ class AlarmManager:
             _LOGGER.error("Failed to ring alarm on %s: %s", target_entity, e)
 
     async def async_test_ring(self) -> dict:
-        """Play the configured alarm sound/announcement once, immediately, for testing."""
+        """Trigger a real ring immediately for testing.
+
+        Enters the full ringing state (binary_sensor turns on, the Voice
+        Satellite card shows its visual alarm overlay) exactly like a
+        scheduled alarm, so users can confirm both the sound AND the visual.
+        Stop it with the Stop / Snooze buttons, "Nabu, stop", or the
+        stop_alarm service.
+        """
         target_entity = self.config.get(CONF_ALARM_SATELLITE_ENTITY)
         if not target_entity:
             return {"ok": False, "error": "No alarm target entity configured."}
@@ -404,19 +411,26 @@ class AlarmManager:
         if self.hass.states.get(target_entity) is None:
             return {"ok": False, "error": f"Entity {target_entity} was not found."}
 
-        sound_url = self._resolve_sound_url()
-        message = "This is a test of your alarm sound."
-
-        is_voice_satellite_domain = target_entity.split(".", 1)[0] == "assist_satellite"
-        if is_voice_satellite_domain and self._has_voice_satellite_card():
-            message = "ALARM_RING Test"
+        now = dt_util.now()
+        test_id = str(self._next_id)
+        self._next_id += 1
+        alarm = {
+            "id": test_id,
+            "hour": now.hour,
+            "minute": now.minute,
+            "label": "Test",
+            "days": None,
+            "next_trigger": now.isoformat(),
+        }
+        self._alarms[test_id] = alarm
 
         try:
-            await self._async_ring_target(target_entity, message, sound_url, blocking=True)
+            await self._async_ring(test_id)
         except Exception as e:
+            self._alarms.pop(test_id, None)
             return {"ok": False, "error": str(e)}
 
-        return {"ok": True, "entity_id": target_entity, "sound_url": sound_url}
+        return {"ok": True, "entity_id": target_entity, "ringing": self.is_ringing()}
 
     async def async_shutdown(self) -> None:
         """Cancel all scheduled and in-progress ring timers on unload."""
