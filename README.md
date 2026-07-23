@@ -198,3 +198,17 @@ No API key required — uses your existing Home Assistant weather entities. You 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+
+---
+
+## ⚡ LLM Tools+ fork (alarms)
+
+This is a fork of [`jxlarrea/voice-satellite-card-llm-tools`](https://github.com/jxlarrea/voice-satellite-card-llm-tools) with a voice-announced **Alarms** tool (domain `voice_satellite_llm_tools_plus`, so it can run alongside the original).
+
+It pairs with the visual alarm overlay in [`rhythmcreative/voice-satellite-card-integration`](https://github.com/rhythmcreative/voice-satellite-card-integration): the backend fires `ALARM_RING` / `ALARM_CLEAR` markers and exposes `stop_alarm` / `snooze_alarm` services that the card's on-screen Stop / Snooze buttons call.
+
+### Install (HACS custom repository)
+1. HACS → Integrations → ⋮ → Custom repositories
+2. URL: `https://github.com/rhythmcreative/voice-satellite-card-llm-tools`, category **Integration**
+3. Install **Voice Satellite - LLM Tools+**, restart Home Assistant, then add it via Settings → Devices & Services and pick the **Alarms** tool type.

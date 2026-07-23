@@ -1,7 +1,7 @@
 {
-  "name": "Voice Satellite - LLM Tools",
+  "name": "Voice Satellite - LLM Tools+",
   "homeassistant": "2025.2.1",
   "render_readme": true,
   "zip_release": true,
-  "filename": "voice-satellite-llm-tools.zip"
+  "filename": "voice-satellite-llm-tools-plus.zip"
 }

@@ -1,0 +1,30 @@
+test_alarm:
+  name: Test Alarm
+  description: >-
+    Immediately plays the configured Alarms tool's sound and spoken
+    announcement once, so you can confirm which sound is used and which
+    voice satellite it plays on. Requires the Alarms tool to be configured.
+stop_alarm:
+  name: Stop Alarm
+  description: >-
+    Immediately stops/silences whichever alarm is currently ringing, without
+    going through the conversation agent. Used by the bundled Lovelace alarm
+    banner card's Stop button, and safe to call even when nothing is ringing.
+snooze_alarm:
+  name: Snooze Alarm
+  description: >-
+    Silences whichever alarm is currently ringing and reschedules it to ring
+    again after the given number of minutes. Used by the Voice Satellite
+    alarm overlay's Snooze button, and safe to call even when nothing is
+    ringing.
+  fields:
+    minutes:
+      name: Minutes
+      description: How many minutes to postpone the alarm.
+      default: 9
+      selector:
+        number:
+          min: 1
+          max: 60
+          step: 1
+          unit_of_measurement: min

@@ -6,9 +6,21 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
+from .alarm_manager import AlarmManager
+from .alarm_tool import (
+    CancelAlarmTool,
+    ListAlarmsTool,
+    SetAlarmTool,
+    StopAlarmTool,
+    TestAlarmTool,
+)
 from .brave_image_search import BraveImageSearchTool
 from .brave_web_search import BraveWebSearchTool
 from .const import (
+    ALARM_API_ID,
+    ALARM_API_NAME,
+    ALARM_SERVICES_PROMPT,
+    CONF_ALARM_SATELLITE_ENTITY,
     CONF_DAILY_WEATHER_ENTITY,
     CONF_FINANCIAL_PROVIDER,
     CONF_FINANCIAL_PROVIDER_FINNHUB,
@@ -28,6 +40,7 @@ from .const import (
     IMAGE_SEARCH_API_ID,
     IMAGE_SEARCH_API_NAME,
     IMAGE_SEARCH_SERVICES_PROMPT,
+    TOOL_TYPE_ALARM,
     TOOL_TYPE_FINANCIAL,
     TOOL_TYPE_IMAGE_SEARCH,
     TOOL_TYPE_VIDEO_SEARCH,
@@ -269,6 +282,40 @@ class FinancialDataAPI(llm.API):
         )
 
 
+class AlarmAPI(llm.API):
+    """Alarm API for LLM integration."""
+
+    def __init__(
+        self, hass: HomeAssistant, config_data: dict[str, Any], manager: AlarmManager
+    ) -> None:
+        """Initialize the Alarm API."""
+        super().__init__(
+            hass=hass,
+            id=ALARM_API_ID,
+            name=ALARM_API_NAME,
+        )
+        self._config_data = config_data
+        self._manager = manager
+
+    async def async_get_api_instance(
+        self, llm_context: llm.LLMContext
+    ) -> llm.APIInstance:
+        """Return an API instance with the alarm management tools."""
+        tools = [
+            SetAlarmTool(self._config_data, self.hass, self._manager),
+            ListAlarmsTool(self._config_data, self.hass, self._manager),
+            CancelAlarmTool(self._config_data, self.hass, self._manager),
+            StopAlarmTool(self._config_data, self.hass, self._manager),
+            TestAlarmTool(self._config_data, self.hass, self._manager),
+        ]
+        return llm.APIInstance(
+            api=self,
+            api_prompt=ALARM_SERVICES_PROMPT,
+            llm_context=llm_context,
+            tools=tools,
+        )
+
+
 async def setup_llm_api(
     hass: HomeAssistant, config_data: dict[str, Any], entry_id: str
 ) -> None:
@@ -356,6 +403,23 @@ async def setup_llm_api(
                 "No financial data provider enabled, LLM API not registered"
             )
 
+    elif tool_type == TOOL_TYPE_ALARM:
+        if config_data.get(CONF_ALARM_SATELLITE_ENTITY):
+            manager = AlarmManager(hass, config_data, entry_id)
+            await manager.async_load()
+            api = AlarmAPI(hass, config_data, manager)
+            unreg = llm.async_register_api(hass, api)
+            hass.data[DOMAIN]["entries"][entry_id] = {
+                "config": config_data.copy(),
+                "unregister_api": unreg,
+                "alarm_manager": manager,
+            }
+            _LOGGER.info("Registered LLM API: %s", ALARM_API_NAME)
+        else:
+            _LOGGER.warning(
+                "Alarm satellite entity not configured, Alarm API not registered"
+            )
+
 
 async def cleanup_llm_api(hass: HomeAssistant, entry_id: str) -> None:
     """Unregister a specific entry's API."""
@@ -370,6 +434,10 @@ async def cleanup_llm_api(hass: HomeAssistant, entry_id: str) -> None:
                 unreg()
             except Exception as e:
                 _LOGGER.debug("Error unregistering LLM API: %s", e)
+
+        manager = entry_data.get("alarm_manager")
+        if manager:
+            await manager.async_shutdown()
 
     # Clean up domain data when last entry is removed
     if not hass.data[DOMAIN].get("entries"):

@@ -118,6 +118,22 @@
         "data_description": {
           "finnhub_api_key": "Get your free API key from finnhub.io. Supports stock quotes and currency exchange rates."
         }
+      },
+      "alarm": {
+        "title": "Configure Alarms",
+        "description": "Select the device that should ring your alarms. No API key required.",
+        "data": {
+          "alarm_satellite_entity": "Alarm Target Entity",
+          "alarm_sound": "Alarm Sound",
+          "alarm_sound_url": "Custom Sound URL (advanced)",
+          "alarm_ring_count": "Number of Rings"
+        },
+        "data_description": {
+          "alarm_satellite_entity": "An assist_satellite entity (e.g. Voice PE, ESPHome) rung via its built-in announce, OR a media_player entity (speaker, Sonos, Chromecast, etc.) rung via play_media (sound only). A browser-only Voice Satellite card has no backing entity and can't be targeted directly.",
+          "alarm_sound": "One of the built-in sounds played before the spoken announcement. After saving, use the 'Test Alarm' action (Developer Tools > Actions) to hear it and confirm which device it plays on.",
+          "alarm_sound_url": "Optional. Overrides 'Alarm Sound' with your own media URL instead.",
+          "alarm_ring_count": "How many times the alarm re-announces itself (about 20 seconds apart) before stopping on its own, if nobody says stop."
+        }
       }
     },
     "abort": {
@@ -127,6 +143,7 @@
       "wikipedia_already_configured": "Wikipedia Search is already configured. Use the existing entry's options to change settings.",
       "weather_already_configured": "Weather Forecast is already configured. Use the existing entry's options to change settings.",
       "financial_already_configured": "Financial Data is already configured. Use the existing entry's options to change settings.",
+      "alarm_already_configured": "Alarms is already configured. Use the existing entry's options to change settings.",
       "unknown_tool_type": "Unknown tool type selected.",
       "unknown_provider": "Unknown search provider selected."
     }
@@ -240,6 +257,22 @@
         },
         "data_description": {
           "finnhub_api_key": "Get your free API key from finnhub.io. Supports stock quotes and currency exchange rates."
+        }
+      },
+      "alarm": {
+        "title": "Alarm Options",
+        "description": "Update your alarm target and ringing settings.",
+        "data": {
+          "alarm_satellite_entity": "Alarm Target Entity",
+          "alarm_sound": "Alarm Sound",
+          "alarm_sound_url": "Custom Sound URL (advanced)",
+          "alarm_ring_count": "Number of Rings"
+        },
+        "data_description": {
+          "alarm_satellite_entity": "An assist_satellite entity (e.g. Voice PE, ESPHome) rung via its built-in announce, OR a media_player entity (speaker, Sonos, Chromecast, etc.) rung via play_media (sound only). A browser-only Voice Satellite card has no backing entity and can't be targeted directly.",
+          "alarm_sound": "One of the built-in sounds played before the spoken announcement. After saving, use the 'Test Alarm' action (Developer Tools > Actions) to hear it and confirm which device it plays on.",
+          "alarm_sound_url": "Optional. Overrides 'Alarm Sound' with your own media URL instead.",
+          "alarm_ring_count": "How many times the alarm re-announces itself (about 20 seconds apart) before stopping on its own, if nobody says stop."
         }
       }
     }

@@ -1,0 +1,15 @@
+{
+  "domain": "voice_satellite_llm_tools_plus",
+  "name": "Voice Satellite - LLM Tools+",
+  "codeowners": [
+    "@rhythmcreative"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
+  "documentation": "https://github.com/rhythmcreative/voice-satellite-card-llm-tools",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/rhythmcreative/voice-satellite-card-llm-tools/issues",
+  "version": "1.10.0"
+}

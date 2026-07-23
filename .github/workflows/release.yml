@@ -21,10 +21,10 @@ jobs:
 
       - name: Create integration zip
         run: |
-          cd custom_components/voice_satellite_llm_tools
-          zip -r ../../voice-satellite-llm-tools.zip .
+          cd custom_components/voice_satellite_llm_tools_plus
+          zip -r ../../voice-satellite-llm-tools-plus.zip . -x '*.pyc' -x '*__pycache__*'
 
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name || github.event.inputs.tag }}" voice-satellite-llm-tools.zip --clobber
+        run: gh release upload "${{ github.event.release.tag_name || github.event.inputs.tag }}" voice-satellite-llm-tools-plus.zip --clobber
