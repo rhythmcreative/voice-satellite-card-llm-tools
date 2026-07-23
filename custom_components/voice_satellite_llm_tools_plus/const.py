@@ -241,9 +241,13 @@ CONF_ALARM_SOUND = "alarm_sound"
 CONF_ALARM_SOUND_URL = "alarm_sound_url"
 CONF_ALARM_RING_COUNT = "alarm_ring_count"
 
-# Fixed spacing between re-announcements while an alarm rings. Not user
-# configurable — the ring count already bounds the total ringing duration.
+# Fixed spacing between re-announcements while an alarm rings.
 ALARM_RING_INTERVAL_SECONDS = 20
+
+# Safety cap on how many times an alarm re-rings before auto-stopping, so a
+# missed alarm can't ring forever. 45 * 20s ≈ 15 minutes. A real alarm rings
+# until the user stops or snoozes it; this only bounds the worst case.
+ALARM_MAX_RINGS = 45
 
 # Dispatcher signal (format with entry_id) broadcast whenever an entry's
 # ringing state changes, so the binary_sensor entity can update live.

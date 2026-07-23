@@ -43,6 +43,14 @@ class AlarmRingingBinarySensor(BinarySensorEntity):
         self._attr_is_on = manager.is_ringing()
         self._attr_name = f"{ADDON_NAME} Alarm Ringing"
 
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Expose the ringing alarm's label and set time for the card overlay."""
+        try:
+            return self._manager.ringing_info()
+        except Exception:  # noqa: BLE001 - attributes must never raise
+            return {}
+
     async def async_added_to_hass(self) -> None:
         """Subscribe to ringing-state changes from the AlarmManager."""
         self.async_on_remove(

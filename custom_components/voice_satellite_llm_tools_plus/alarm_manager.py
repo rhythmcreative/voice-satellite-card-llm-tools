@@ -11,6 +11,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ALARM_MAX_RINGS,
     ALARM_RING_INTERVAL_SECONDS,
     ALARM_SOUND_NONE,
     BUILTIN_ALARM_SOUNDS,
@@ -145,6 +146,20 @@ class AlarmManager:
         """Return whether any alarm is currently ringing."""
         return bool(self._ringing)
 
+    def ringing_info(self) -> dict:
+        """Return {label, time} for the currently ringing alarm, if any.
+
+        Exposed on the alarm-ringing binary_sensor so the Voice Satellite
+        card's visual overlay can label the alarm and show its set time.
+        """
+        for state in self._ringing.values():
+            return {
+                "alarm_label": state.get("label", ""),
+                "alarm_time": state.get("time", ""),
+                "alarm_sound_url": self._resolve_sound_url() or "",
+            }
+        return {"alarm_label": "", "alarm_time": "", "alarm_sound_url": ""}
+
     def _notify_ringing_state(self) -> None:
         """Broadcast the current ringing state to the binary_sensor entity."""
         async_dispatcher_send(
@@ -240,11 +255,25 @@ class AlarmManager:
         if alarm is None:
             return
 
-        state = {"stopped": False, "repeat_unsub": None, "rings_done": 0}
+        state = {
+            "stopped": False,
+            "repeat_unsub": None,
+            "rings_done": 0,
+            "label": alarm.get("label", ""),
+            "time": f"{alarm.get('hour', 0):02d}:{alarm.get('minute', 0):02d}",
+        }
         self._ringing[alarm_id] = state
         self._notify_ringing_state()
 
-        ring_count = self.config.get(CONF_ALARM_RING_COUNT, 3)
+        # A real alarm keeps ringing until the user stops or snoozes it. The
+        # configured ring count is a lower bound; ringing continues (the
+        # binary_sensor stays on so the card's overlay stays up) up to a
+        # safety cap so a missed alarm can't ring forever.
+        try:
+            ring_count = int(self.config.get(CONF_ALARM_RING_COUNT, 3) or 3)
+        except (TypeError, ValueError):
+            ring_count = 3
+        max_rings = max(ring_count, ALARM_MAX_RINGS)
 
         async def _announce_cycle(_now=None) -> None:
             if state["stopped"]:
@@ -253,7 +282,7 @@ class AlarmManager:
             state["rings_done"] += 1
             if state["stopped"]:
                 return
-            if state["rings_done"] >= ring_count:
+            if state["rings_done"] >= max_rings:
                 self._stop_ringing(alarm_id)
                 await self._async_send_alarm_clear()
                 return
