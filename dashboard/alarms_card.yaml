@@ -1,0 +1,76 @@
+# Voice Satellite - LLM Tools+ : Alarms dashboard card
+#
+# Ready-to-paste Lovelace card built entirely from built-in HA card types
+# (markdown + button) — no custom frontend / HACS card required.
+#
+# HOW TO USE:
+#   1. Replace the two entity IDs below with your own. Find them at
+#      Developer Tools -> States, filter "alarm" (they depend on how you
+#      named the config entry, e.g. "Alarms").
+#   2. Dashboard -> Edit Dashboard -> + Add Card -> Manual -> paste this
+#      whole file's content.
+#
+# Entities used:
+#   binary_sensor.voice_satellite_llm_tools_alarm_ringing
+#     -> "on" while an alarm is ringing; attributes: alarm_label, alarm_time
+#   sensor.voice_satellite_llm_tools_next_alarm
+#     -> state = next alarm's timestamp; attributes: alarms (list), count
+
+type: vertical-stack
+cards:
+  # ── Ringing banner (only visible while an alarm is actually ringing) ──
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.voice_satellite_llm_tools_alarm_ringing
+        state: "on"
+    card:
+      type: markdown
+      content: >
+        ## 🔔 Ringing:
+        {{ state_attr('binary_sensor.voice_satellite_llm_tools_alarm_ringing', 'alarm_label') or 'Alarm' }}
+
+        Set for **{{ state_attr('binary_sensor.voice_satellite_llm_tools_alarm_ringing', 'alarm_time') or '—' }}**
+
+  # ── Stop / Snooze row (only visible while ringing) ──
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.voice_satellite_llm_tools_alarm_ringing
+        state: "on"
+    card:
+      type: horizontal-stack
+      cards:
+        - type: button
+          name: Snooze 9 min
+          icon: mdi:alarm-snooze
+          tap_action:
+            action: call-service
+            service: voice_satellite_llm_tools_plus.snooze_alarm
+            service_data:
+              minutes: 9
+        - type: button
+          name: Stop
+          icon: mdi:alarm-off
+          tap_action:
+            action: call-service
+            service: voice_satellite_llm_tools_plus.stop_alarm
+
+  # ── Active alarms list ──
+  - type: markdown
+    title: Active Alarms
+    content: >
+      {% set alarms = state_attr('sensor.voice_satellite_llm_tools_next_alarm', 'alarms') or [] %}
+      {% if alarms %}
+      {% for a in alarms %}
+      - ⏰ **{{ a.time }}**{% if a.label %} — {{ a.label }}{% endif %}{% if a.days %} _({{ a.days | join(', ') }})_{% endif %}
+      {% endfor %}
+      {% else %}
+      _No alarms scheduled._
+      {% endif %}
+
+  # ── Test button (plays the real ring + shows the ringing banner above) ──
+  - type: button
+    name: Test Alarm
+    icon: mdi:alarm-check
+    tap_action:
+      action: call-service
+      service: voice_satellite_llm_tools_plus.test_alarm

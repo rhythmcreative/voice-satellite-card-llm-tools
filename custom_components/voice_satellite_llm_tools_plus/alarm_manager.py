@@ -22,6 +22,7 @@ from .const import (
     CONF_ALARM_SOUND_URL,
     DOMAIN,
     SIGNAL_ALARM_RINGING,
+    SIGNAL_ALARMS_UPDATED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -118,6 +119,7 @@ class AlarmManager:
         self._alarms[alarm_id] = alarm
         self._schedule(alarm_id, alarm)
         await self._async_save()
+        self._notify_alarms_updated()
         return alarm
 
     async def async_cancel_alarm(self, alarm_id: str) -> bool:
@@ -128,6 +130,7 @@ class AlarmManager:
                 self._stop_ringing(aid)
             self._alarms.clear()
             await self._async_save()
+            self._notify_alarms_updated()
             return True
 
         if alarm_id not in self._alarms:
@@ -137,6 +140,7 @@ class AlarmManager:
         self._stop_ringing(alarm_id)
         del self._alarms[alarm_id]
         await self._async_save()
+        self._notify_alarms_updated()
         return True
 
     def async_list_alarms(self) -> list[dict]:
@@ -166,6 +170,10 @@ class AlarmManager:
         async_dispatcher_send(
             self.hass, SIGNAL_ALARM_RINGING.format(self.entry_id), self.is_ringing()
         )
+
+    def _notify_alarms_updated(self) -> None:
+        """Broadcast that the alarm list changed, so the Next Alarm sensor refreshes."""
+        async_dispatcher_send(self.hass, SIGNAL_ALARMS_UPDATED.format(self.entry_id))
 
     async def async_stop_ringing(self) -> bool:
         """Stop whichever alarm(s) are currently ringing (the 'Nabu, stop' path)."""
@@ -217,6 +225,7 @@ class AlarmManager:
             self._schedule(snooze_id, snooze_alarm)
 
         await self._async_save()
+        self._notify_alarms_updated()
         _LOGGER.debug("Snoozed %d alarm(s) for %d minute(s)", len(ring_ids), minutes)
         return True
 
@@ -316,6 +325,7 @@ class AlarmManager:
             self._alarms.pop(alarm_id, None)
             self._unschedule(alarm_id)
         await self._async_save()
+        self._notify_alarms_updated()
 
     def _resolve_sound_url(self) -> str | None:
         """Resolve the effective alarm sound URL: custom override, or a bundled sound."""

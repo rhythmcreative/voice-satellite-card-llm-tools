@@ -254,6 +254,11 @@ ALARM_MAX_RINGS = 45
 # ringing state changes, so the binary_sensor entity can update live.
 SIGNAL_ALARM_RINGING = f"{DOMAIN}_alarm_ringing_{{}}"
 
+# Dispatcher signal (format with entry_id) broadcast whenever an entry's
+# alarm list changes (set/cancel/snooze/reschedule), so the Next Alarm
+# sensor can refresh its state and attributes live.
+SIGNAL_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated_{{}}"
+
 # Built-in alarm sounds, bundled with the integration and served as static files.
 # Values are paths relative to the Home Assistant base URL.
 ALARM_SOUND_NONE = "none"

@@ -206,9 +206,26 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 This is a fork of [`jxlarrea/voice-satellite-card-llm-tools`](https://github.com/jxlarrea/voice-satellite-card-llm-tools) with a voice-announced **Alarms** tool (domain `voice_satellite_llm_tools_plus`, so it can run alongside the original).
 
-It pairs with the visual alarm overlay in [`rhythmcreative/voice-satellite-card-integration`](https://github.com/rhythmcreative/voice-satellite-card-integration): the backend fires `ALARM_RING` / `ALARM_CLEAR` markers and exposes `stop_alarm` / `snooze_alarm` services that the card's on-screen Stop / Snooze buttons call.
+It exposes `stop_alarm` / `snooze_alarm` services (also reachable by voice — "Nabu, stop" / "Nabu, para") and two entities for dashboards: a ringing `binary_sensor` and a "Next Alarm" `sensor` listing every active alarm. See [Dashboard cards](#dashboard-cards) below for a ready-to-paste Lovelace example.
 
 ### Install (HACS custom repository)
 1. HACS → Integrations → ⋮ → Custom repositories
 2. URL: `https://github.com/rhythmcreative/voice-satellite-card-llm-tools`, category **Integration**
 3. Install **Voice Satellite - LLM Tools+**, restart Home Assistant, then add it via Settings → Devices & Services and pick the **Alarms** tool type.
+
+### Entities
+
+| Entity | What it shows |
+|---|---|
+| `binary_sensor.<name>_alarm_ringing` | `on` while any alarm is ringing. Attributes: `alarm_label`, `alarm_time`, `alarm_sound_url`. |
+| `sensor.<name>_next_alarm` | State = timestamp of the soonest scheduled alarm (or unavailable if none). Attributes: `alarms` (full list, each `{id, time, label, days, next_trigger}`), `count`. |
+
+Exact entity IDs depend on how you named the config entry — check **Developer Tools → States** and filter for "alarm" to find yours.
+
+### Dashboard cards
+
+A ready-to-paste Lovelace example lives at [`dashboard/alarms_card.yaml`](dashboard/alarms_card.yaml) — shows a ringing banner with Stop/Snooze buttons, the list of active alarms, and a Test Alarm button. To use it:
+
+1. Open your dashboard → ⋮ → **Edit Dashboard** → **+ Add Card** → scroll down → **Manual**.
+2. Replace the entity IDs at the top of the YAML with your own (see the table above), paste the rest, and save.
+3. Repeat for each card block if you're building it as separate cards instead of one stack.

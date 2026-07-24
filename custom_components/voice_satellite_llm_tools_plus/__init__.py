@@ -26,7 +26,7 @@ SERVICE_TEST_ALARM = "test_alarm"
 SERVICE_STOP_ALARM = "stop_alarm"
 SERVICE_SNOOZE_ALARM = "snooze_alarm"
 
-ALARM_PLATFORMS = ["binary_sensor"]
+ALARM_PLATFORMS = ["binary_sensor", "sensor"]
 
 
 def _find_alarm_manager(hass: HomeAssistant):
