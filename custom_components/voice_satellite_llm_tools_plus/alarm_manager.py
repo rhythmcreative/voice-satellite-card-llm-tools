@@ -16,6 +16,7 @@ from .const import (
     ALARM_SOUND_NONE,
     BUILTIN_ALARM_SOUNDS,
     CONF_ALARM_RING_COUNT,
+    CONF_ALARM_RING_INTERVAL_SECONDS,
     CONF_ALARM_SATELLITE_ENTITY,
     CONF_ALARM_SOUND,
     CONF_ALARM_SOUND_URL,
@@ -265,15 +266,27 @@ class AlarmManager:
         self._ringing[alarm_id] = state
         self._notify_ringing_state()
 
-        # A real alarm keeps ringing until the user stops or snoozes it. The
-        # configured ring count is a lower bound; ringing continues (the
-        # binary_sensor stays on so the card's overlay stays up) up to a
-        # safety cap so a missed alarm can't ring forever.
+        # Re-announces up to the configured ring count, spaced by the
+        # configured interval, then stops on its own if nobody said stop.
+        # ALARM_MAX_RINGS is only a defensive ceiling (the UI caps ring
+        # count at 10, well under it) in case a higher value is set via
+        # YAML/automation.
         try:
             ring_count = int(self.config.get(CONF_ALARM_RING_COUNT, 3) or 3)
         except (TypeError, ValueError):
             ring_count = 3
-        max_rings = max(ring_count, ALARM_MAX_RINGS)
+        max_rings = max(1, min(ring_count, ALARM_MAX_RINGS))
+
+        try:
+            interval_seconds = int(
+                self.config.get(
+                    CONF_ALARM_RING_INTERVAL_SECONDS, ALARM_RING_INTERVAL_SECONDS
+                )
+                or ALARM_RING_INTERVAL_SECONDS
+            )
+        except (TypeError, ValueError):
+            interval_seconds = ALARM_RING_INTERVAL_SECONDS
+        interval_seconds = max(5, min(interval_seconds, 120))
 
         async def _announce_cycle(_now=None) -> None:
             if state["stopped"]:
@@ -287,7 +300,7 @@ class AlarmManager:
                 await self._async_send_alarm_clear()
                 return
             state["repeat_unsub"] = async_call_later(
-                self.hass, ALARM_RING_INTERVAL_SECONDS, _announce_cycle
+                self.hass, interval_seconds, _announce_cycle
             )
 
         await _announce_cycle()

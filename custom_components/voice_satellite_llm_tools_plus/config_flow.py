@@ -25,7 +25,9 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     ALARM_DEFAULTS,
+    ALARM_RING_INTERVAL_SECONDS,
     CONF_ALARM_RING_COUNT,
+    CONF_ALARM_RING_INTERVAL_SECONDS,
     CONF_ALARM_SATELLITE_ENTITY,
     CONF_ALARM_SOUND,
     CONF_ALARM_SOUND_OPTIONS,
@@ -341,6 +343,18 @@ def get_alarm_schema(defaults: dict | None = None) -> vol.Schema:
                     step=1,
                     mode=NumberSelectorMode.SLIDER,
                     unit_of_measurement="times",
+                )
+            ),
+            vol.Required(
+                CONF_ALARM_RING_INTERVAL_SECONDS,
+                default=d.get(CONF_ALARM_RING_INTERVAL_SECONDS, ALARM_RING_INTERVAL_SECONDS),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=5,
+                    max=120,
+                    step=5,
+                    mode=NumberSelectorMode.SLIDER,
+                    unit_of_measurement="seconds",
                 )
             ),
         }

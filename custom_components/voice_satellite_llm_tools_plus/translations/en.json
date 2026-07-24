@@ -126,13 +126,15 @@
           "alarm_satellite_entity": "Alarm Target Entity",
           "alarm_sound": "Alarm Sound",
           "alarm_sound_url": "Custom Sound URL (advanced)",
-          "alarm_ring_count": "Number of Rings"
+          "alarm_ring_count": "Number of Rings",
+          "alarm_ring_interval_seconds": "Seconds Between Rings"
         },
         "data_description": {
           "alarm_satellite_entity": "An assist_satellite entity (e.g. Voice PE, ESPHome) rung via its built-in announce, OR a media_player entity (speaker, Sonos, Chromecast, etc.) rung via play_media (sound only). A browser-only Voice Satellite card has no backing entity and can't be targeted directly.",
           "alarm_sound": "One of the built-in sounds played before the spoken announcement. After saving, use the 'Test Alarm' action (Developer Tools > Actions) to hear it and confirm which device it plays on.",
           "alarm_sound_url": "Optional. Overrides 'Alarm Sound' with your own media URL instead.",
-          "alarm_ring_count": "How many times the alarm re-announces itself (about 20 seconds apart) before stopping on its own, if nobody says stop."
+          "alarm_ring_count": "How many times the alarm re-announces itself before stopping on its own, if nobody says stop.",
+          "alarm_ring_interval_seconds": "How many seconds to wait between each re-announcement."
         }
       }
     },
@@ -266,13 +268,15 @@
           "alarm_satellite_entity": "Alarm Target Entity",
           "alarm_sound": "Alarm Sound",
           "alarm_sound_url": "Custom Sound URL (advanced)",
-          "alarm_ring_count": "Number of Rings"
+          "alarm_ring_count": "Number of Rings",
+          "alarm_ring_interval_seconds": "Seconds Between Rings"
         },
         "data_description": {
           "alarm_satellite_entity": "An assist_satellite entity (e.g. Voice PE, ESPHome) rung via its built-in announce, OR a media_player entity (speaker, Sonos, Chromecast, etc.) rung via play_media (sound only). A browser-only Voice Satellite card has no backing entity and can't be targeted directly.",
           "alarm_sound": "One of the built-in sounds played before the spoken announcement. After saving, use the 'Test Alarm' action (Developer Tools > Actions) to hear it and confirm which device it plays on.",
           "alarm_sound_url": "Optional. Overrides 'Alarm Sound' with your own media URL instead.",
-          "alarm_ring_count": "How many times the alarm re-announces itself (about 20 seconds apart) before stopping on its own, if nobody says stop."
+          "alarm_ring_count": "How many times the alarm re-announces itself before stopping on its own, if nobody says stop.",
+          "alarm_ring_interval_seconds": "How many seconds to wait between each re-announcement."
         }
       }
     }

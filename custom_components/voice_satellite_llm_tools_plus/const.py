@@ -240,8 +240,9 @@ CONF_ALARM_SATELLITE_ENTITY = "alarm_satellite_entity"
 CONF_ALARM_SOUND = "alarm_sound"
 CONF_ALARM_SOUND_URL = "alarm_sound_url"
 CONF_ALARM_RING_COUNT = "alarm_ring_count"
+CONF_ALARM_RING_INTERVAL_SECONDS = "alarm_ring_interval_seconds"
 
-# Fixed spacing between re-announcements while an alarm rings.
+# Fallback spacing between re-announcements when not configured by the user.
 ALARM_RING_INTERVAL_SECONDS = 20
 
 # Safety cap on how many times an alarm re-rings before auto-stopping, so a
@@ -277,4 +278,5 @@ ALARM_DEFAULTS = {
     CONF_ALARM_SOUND: "classic_alarm",
     CONF_ALARM_SOUND_URL: "",
     CONF_ALARM_RING_COUNT: 3,
+    CONF_ALARM_RING_INTERVAL_SECONDS: ALARM_RING_INTERVAL_SECONDS,
 }
