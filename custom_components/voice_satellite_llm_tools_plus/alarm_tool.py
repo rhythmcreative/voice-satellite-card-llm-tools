@@ -13,6 +13,15 @@ from .base_tool import BaseTool
 _LOGGER = logging.getLogger(__name__)
 
 DAY_NAME_TO_WEEKDAY = {
+    "lunes": 0,
+    "martes": 1,
+    "miércoles": 2,
+    "miercoles": 2,
+    "jueves": 3,
+    "viernes": 4,
+    "sábado": 5,
+    "sabado": 5,
+    "domingo": 6,
     "monday": 0,
     "tuesday": 1,
     "wednesday": 2,
@@ -22,15 +31,26 @@ DAY_NAME_TO_WEEKDAY = {
     "sunday": 6,
 }
 
-TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
+TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$")
 
 
 def _parse_time(value: str) -> tuple[int, int]:
-    """Parse a 24-hour HH:MM string into (hour, minute)."""
-    match = TIME_RE.match(value.strip())
+    """Parse a 24-hour HH:MM[:SS] string into (hour, minute). Seconds are ignored."""
+    raw = value.strip()
+    am_pm = re.search(r"\s*([AP]M)\s*$", raw, re.IGNORECASE)
+    if am_pm:
+        raw = raw[: am_pm.start()].strip()
+    match = TIME_RE.match(raw)
     if not match:
         raise ValueError(f"Invalid time format: {value!r}. Expected 24-hour HH:MM.")
-    return int(match.group(1)), int(match.group(2))
+    hour, minute = int(match.group(1)), int(match.group(2))
+    if am_pm:
+        is_pm = am_pm.group(1).upper() == "PM"
+        if is_pm and hour < 12:
+            hour += 12
+        if not is_pm and hour == 12:
+            hour = 0
+    return hour, minute
 
 
 def _parse_days(days: list[str] | None) -> list[int] | None:

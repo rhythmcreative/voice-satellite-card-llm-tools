@@ -25,6 +25,9 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     ALARM_DEFAULTS,
+    DEFAULT_ENTITY_CARD_HISTORY_HOURS,
+    DEFAULT_ENTITY_CARD_MAX_ENTITIES,
+    ENTITY_CARD_DEFAULTS,
     ALARM_RING_INTERVAL_SECONDS,
     CONF_ALARM_RING_COUNT,
     CONF_ALARM_RING_INTERVAL_SECONDS,
@@ -32,6 +35,8 @@ from .const import (
     CONF_ALARM_SOUND,
     CONF_ALARM_SOUND_OPTIONS,
     CONF_ALARM_SOUND_URL,
+    CONF_ENTITY_CARD_HISTORY_HOURS,
+    CONF_ENTITY_CARD_MAX_ENTITIES,
     CONF_BRAVE_API_KEY,
     CONF_BRAVE_IMAGE_NUM_RESULTS,
     CONF_BRAVE_SAFESEARCH,
@@ -67,6 +72,7 @@ from .const import (
     FINANCIAL_DEFAULTS,
     IMAGE_SEARCH_DEFAULTS,
     TOOL_TYPE_ALARM,
+    TOOL_TYPE_ENTITY_CARD,
     TOOL_TYPE_FINANCIAL,
     TOOL_TYPE_IMAGE_SEARCH,
     TOOL_TYPE_VIDEO_SEARCH,
@@ -95,6 +101,7 @@ STEP_WEATHER = "weather"
 STEP_FINANCIAL_PROVIDER = "financial_provider"
 STEP_FINNHUB_FINANCIAL = "finnhub_financial"
 STEP_ALARM = "alarm"
+STEP_ENTITY_CARD = "entity_card"
 
 SAFESEARCH_OPTIONS = {
     "off": "Off",
@@ -331,6 +338,8 @@ def get_alarm_schema(defaults: dict | None = None) -> vol.Schema:
             ),
             vol.Optional(
                 CONF_ALARM_SOUND_URL,
+    CONF_ENTITY_CARD_HISTORY_HOURS,
+    CONF_ENTITY_CARD_MAX_ENTITIES,
                 default=d.get(CONF_ALARM_SOUND_URL, ""),
             ): str,
             vol.Required(
@@ -355,6 +364,39 @@ def get_alarm_schema(defaults: dict | None = None) -> vol.Schema:
                     step=5,
                     mode=NumberSelectorMode.SLIDER,
                     unit_of_measurement="seconds",
+                )
+            ),
+        }
+    )
+
+
+def get_entity_card_schema(defaults: dict | None = None) -> vol.Schema:
+    """Schema for Entity Card configuration."""
+    d = defaults or ENTITY_CARD_DEFAULTS
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_ENTITY_CARD_MAX_ENTITIES,
+                default=d.get(CONF_ENTITY_CARD_MAX_ENTITIES, DEFAULT_ENTITY_CARD_MAX_ENTITIES),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1,
+                    max=12,
+                    step=1,
+                    mode=NumberSelectorMode.SLIDER,
+                    unit_of_measurement="entities",
+                )
+            ),
+            vol.Required(
+                CONF_ENTITY_CARD_HISTORY_HOURS,
+                default=d.get(CONF_ENTITY_CARD_HISTORY_HOURS, DEFAULT_ENTITY_CARD_HISTORY_HOURS),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1,
+                    max=168,
+                    step=1,
+                    mode=NumberSelectorMode.SLIDER,
+                    unit_of_measurement="hours",
                 )
             ),
         }
@@ -490,6 +532,14 @@ class VoiceSatelliteLlmToolsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN)
             return self.async_show_form(
                 step_id=STEP_ALARM,
                 data_schema=get_alarm_schema(),
+            )
+
+        if tool_type == TOOL_TYPE_ENTITY_CARD:
+            if self._existing_entry_for_tool_type(TOOL_TYPE_ENTITY_CARD):
+                return self.async_abort(reason="entity_card_already_configured")
+            return self.async_show_form(
+                step_id=STEP_ENTITY_CARD,
+                data_schema=get_entity_card_schema(),
             )
 
         return self.async_abort(reason="unknown_tool_type")
@@ -707,6 +757,21 @@ class VoiceSatelliteLlmToolsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(title="Alarms", data=self.config_data)
 
+    async def async_step_entity_card(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Configure Entity Card settings."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id=STEP_ENTITY_CARD,
+                data_schema=get_entity_card_schema(),
+            )
+
+        self.config_data.update(user_input)
+        await self.async_set_unique_id(f"{DOMAIN}_entity_card")
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(title="Entity Card", data=self.config_data)
+
     @staticmethod
     @callback
     def async_get_options_flow(
@@ -752,6 +817,9 @@ class VoiceSatelliteLlmToolsOptionsFlow(config_entries.OptionsFlow):
 
         if tool_type == TOOL_TYPE_ALARM:
             return await self.async_step_alarm(user_input)
+
+        if tool_type == TOOL_TYPE_ENTITY_CARD:
+            return await self.async_step_entity_card(user_input)
 
         return self.async_abort(reason="unknown_tool_type")
 
@@ -948,6 +1016,18 @@ class VoiceSatelliteLlmToolsOptionsFlow(config_entries.OptionsFlow):
             schema = get_alarm_schema()
             schema = self.add_suggested_values_to_schema(schema, self.config_data)
             return self.async_show_form(step_id=STEP_ALARM, data_schema=schema)
+
+        self.config_data.update(user_input)
+        return self.async_create_entry(data=self.config_data)
+
+    async def async_step_entity_card(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Options: Entity Card settings."""
+        if user_input is None:
+            schema = get_entity_card_schema()
+            schema = self.add_suggested_values_to_schema(schema, self.config_data)
+            return self.async_show_form(step_id=STEP_ENTITY_CARD, data_schema=schema)
 
         self.config_data.update(user_input)
         return self.async_create_entry(data=self.config_data)

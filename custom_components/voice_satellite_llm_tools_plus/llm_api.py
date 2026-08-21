@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
 from .alarm_manager import AlarmManager
+from .entity_card import EntityCardTool
 from .alarm_tool import (
     CancelAlarmTool,
     ListAlarmsTool,
@@ -18,6 +19,9 @@ from .brave_image_search import BraveImageSearchTool
 from .brave_web_search import BraveWebSearchTool
 from .const import (
     ALARM_API_ID,
+    ENTITY_CARD_API_ID,
+    ENTITY_CARD_API_NAME,
+    ENTITY_CARD_SERVICES_PROMPT,
     ALARM_API_NAME,
     ALARM_SERVICES_PROMPT,
     CONF_ALARM_SATELLITE_ENTITY,
@@ -41,6 +45,7 @@ from .const import (
     IMAGE_SEARCH_API_NAME,
     IMAGE_SEARCH_SERVICES_PROMPT,
     TOOL_TYPE_ALARM,
+    TOOL_TYPE_ENTITY_CARD,
     TOOL_TYPE_FINANCIAL,
     TOOL_TYPE_IMAGE_SEARCH,
     TOOL_TYPE_VIDEO_SEARCH,
@@ -282,6 +287,32 @@ class FinancialDataAPI(llm.API):
         )
 
 
+
+class EntityCardAPI(llm.API):
+    """Entity Card API for LLM integration."""
+
+    def __init__(self, hass: HomeAssistant, config_data: dict[str, Any]) -> None:
+        """Initialize the Entity Card API."""
+        super().__init__(
+            hass=hass,
+            id=ENTITY_CARD_API_ID,
+            name=ENTITY_CARD_API_NAME,
+        )
+        self._config_data = config_data
+
+    async def async_get_api_instance(
+        self, llm_context: llm.LLMContext
+    ) -> llm.APIInstance:
+        """Return an API instance with the entity card tool."""
+        tools = [EntityCardTool(self._config_data, self.hass)]
+        return llm.APIInstance(
+            api=self,
+            api_prompt=ENTITY_CARD_SERVICES_PROMPT,
+            llm_context=llm_context,
+            tools=tools,
+        )
+
+
 class AlarmAPI(llm.API):
     """Alarm API for LLM integration."""
 
@@ -402,6 +433,15 @@ async def setup_llm_api(
             _LOGGER.warning(
                 "No financial data provider enabled, LLM API not registered"
             )
+
+    elif tool_type == TOOL_TYPE_ENTITY_CARD:
+        api = EntityCardAPI(hass, config_data)
+        unreg = llm.async_register_api(hass, api)
+        hass.data[DOMAIN]["entries"][entry_id] = {
+            "config": config_data.copy(),
+            "unregister_api": unreg,
+        }
+        _LOGGER.info("Registered LLM API: %s", ENTITY_CARD_API_NAME)
 
     elif tool_type == TOOL_TYPE_ALARM:
         if config_data.get(CONF_ALARM_SATELLITE_ENTITY):
