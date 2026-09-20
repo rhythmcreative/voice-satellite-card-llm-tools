@@ -258,7 +258,8 @@ class EntityCardTool(BaseTool):
                 {
                     "type": "picture-entity",
                     "entity": entity_id,
-                    "camera_view": "live",
+                    # Avoid blank previews when live streaming is unavailable.
+                    "camera_view": "auto",
                     # Fit the whole frame rather than cropping to fill:
                     # the panel is a fixed width, and "cover" overflows it
                     # into a scrollbar.

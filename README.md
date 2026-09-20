@@ -88,7 +88,7 @@ Look up stock prices, cryptocurrency prices, and convert currencies using [Finnh
 
 Show Home Assistant entities on the satellite screen. Ask to see a camera, a light, or a group of sensors and the assistant draws them as a real Lovelace card in the media panel while it answers out loud. No API key required, and no dashboard editing: the card is built from the entities themselves.
 
-- Cameras render as a live picture card, one or in a grid
+- Cameras render as picture cards using `camera_view: auto`, one or in a grid
 - A single entity renders as a tile
 - Several entities render as an entities list
 - Asking about a trend or history renders a history graph
