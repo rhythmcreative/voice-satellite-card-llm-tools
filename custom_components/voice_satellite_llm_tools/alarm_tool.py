@@ -343,6 +343,10 @@ class SetAlarmTool(BaseAlarmTool):
                 ),
             ): vol.Any([str], str),
             vol.Optional(
+                "repeat",
+                description="Repeat mode: 'never' (deletes automatically after ringing), 'once', or 'weekly'. Default is 'never' for one-time alarms.",
+            ): str,
+            vol.Optional(
                 "media_player",
                 description="Target media player entity ID (e.g. 'media_player.bedroom_speaker').",
             ): str,
@@ -401,11 +405,19 @@ class SetAlarmTool(BaseAlarmTool):
 
         now_local = dt_util.now()
 
+        repeat_param = (tool_input.tool_args.get("repeat") or "").lower()
         if weekdays:
             repeat = "weekly"
             date_str = None
+        elif repeat_param in ("weekly", "once", "never"):
+            repeat = repeat_param
+            alarm_clock = time(hour, minute)
+            if alarm_clock <= now_local.time():
+                date_str = (now_local.date() + timedelta(days=1)).isoformat()
+            else:
+                date_str = now_local.date().isoformat()
         else:
-            repeat = "once"
+            repeat = "never"
             alarm_clock = time(hour, minute)
             if alarm_clock <= now_local.time():
                 date_str = (now_local.date() + timedelta(days=1)).isoformat()
@@ -416,7 +428,7 @@ class SetAlarmTool(BaseAlarmTool):
         if wakey_data:
             for a in wakey_data.store.async_all():
                 if a.time == time_formatted:
-                    if (weekdays and a.weekdays == weekdays) or (not weekdays and a.repeat == "once"):
+                    if (weekdays and a.weekdays == weekdays) or (not weekdays and a.repeat in ("once", "never")):
                         days_summary = (
                             ", ".join(WEEKDAY_NAMES_EN[d] for d in weekdays)
                             if weekdays
