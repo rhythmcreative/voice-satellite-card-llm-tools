@@ -153,108 +153,47 @@ def get_default_media_player(hass: HomeAssistant, config: dict) -> str:
     return configured or "media_player.voice_satellite"
 
 
-def _render_alarm_hero_html(alarm_info: dict | None, action: str = "scheduled") -> str:
-    """Render a clean, native alarm display matching Voice Satellite's UI tokens."""
-    info = alarm_info or {}
-    time_str = info.get("time", "--:--")
-    label = info.get("label") or info.get("name") or "Alarma"
-    weekdays = info.get("weekdays")
-    days_str = info.get("days") or (info.get("repeat") if info.get("repeat") != "once" else "Una vez")
-    media_player = info.get("media_player")
+def _find_alarm_entity_id(hass: HomeAssistant, alarm_id: str | None) -> str | None:
+    """Find the Home Assistant switch entity ID for a given Wakey alarm ID."""
+    if not alarm_id:
+        return None
+    try:
+        from homeassistant.helpers import entity_registry as er
 
-    action_configs = {
-        "scheduled": ("#81c995", "rgba(129, 201, 149, 0.12)", "mdi:alarm-check", "PROGRAMADA"),
-        "reactivated": ("#8ab4f8", "rgba(138, 180, 248, 0.12)", "mdi:alarm-check", "REACTIVADA"),
-        "already_exists": ("#fdd663", "rgba(253, 214, 99, 0.12)", "mdi:alarm", "YA EXISTE"),
-        "adjusted": ("#8ab4f8", "rgba(138, 180, 248, 0.12)", "mdi:alarm-note", "AJUSTADA"),
-        "cancelled": ("#f28b82", "rgba(242, 139, 130, 0.12)", "mdi:alarm-off", "CANCELADA"),
-        "snoozed": ("#fdd663", "rgba(253, 214, 99, 0.12)", "mdi:alarm-snooze", "POSPUESTA"),
-        "stopped": ("#9aa0a6", "rgba(154, 160, 166, 0.12)", "mdi:bell-off", "DETENIDA"),
-        "testing": ("#c58af9", "rgba(197, 138, 249, 0.12)", "mdi:bell-ring", "PROBANDO"),
-    }
-    color, bg, icon, default_status = action_configs.get(
-        action, action_configs["scheduled"]
-    )
-    status_text = info.get("status_text") or default_status
+        ent_reg = er.async_get(hass)
+        ent_id = ent_reg.async_get_entity_id("switch", "wakey", f"{alarm_id}_enabled")
+        if ent_id:
+            return ent_id
+    except Exception:
+        pass
 
-    speaker_info = ""
-    if media_player:
-        clean_mp = media_player.replace("media_player.", "").replace("_", " ").title()
-        speaker_info = f'<div style="font-size: calc(14px * var(--vs-text-scale, 1)); color: var(--df-text-muted, #80868b); margin-top: 4px;"><ha-icon icon="mdi:speaker" style="--mdc-icon-size: 15px; margin-right: 4px; vertical-align: -2px;"></ha-icon>{clean_mp}</div>'
+    if hasattr(hass, "states") and hasattr(hass.states, "async_all"):
+        try:
+            for s in hass.states.async_all("switch"):
+                uid = s.attributes.get("unique_id")
+                if uid == f"{alarm_id}_enabled":
+                    return s.entity_id
+        except Exception:
+            pass
 
-    return f'''<div class="vs-alarm-card" style="font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: var(--df-text, var(--primary-text-color, #e8eaed)); padding: 4px 2px;">
-  <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0 10px 0;">
-    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-      <ha-icon icon="{icon}" style="color: var(--primary-color, #8ab4f8); --mdc-icon-size: 20px;"></ha-icon>
-    </div>
-    <div style="flex: 1; min-width: 0;">
-      <div style="font-size: calc(18px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{label}</div>
-    </div>
-    <span style="font-size: calc(12px * var(--vs-text-scale, 1)); font-weight: 500; color: {color}; background: {bg}; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;">{status_text}</span>
-  </div>
-
-  <div style="font-size: calc(52px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); line-height: 1.1; letter-spacing: -0.02em; padding: 4px 0 2px 0;">
-    {time_str}
-  </div>
-
-  <div style="font-size: calc(18px * var(--vs-text-scale, 1)); color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6)); margin-top: 4px;">
-    {days_str}
-  </div>
-  {speaker_info}
-</div>'''
+    return None
 
 
-def _render_alarm_list_html(alarms: list[dict] | None) -> str:
-    """Render a clean, native alarm list matching Voice Satellite's UI tokens."""
-    if not alarms:
-        return '''<div class="vs-alarm-card" style="font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: var(--df-text, var(--primary-text-color, #e8eaed)); padding: 24px 8px; text-align: center;">
-  <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-    <ha-icon icon="mdi:alarm-off" style="color: var(--df-text-muted, #80868b); --mdc-icon-size: 24px;"></ha-icon>
-  </div>
-  <div style="font-size: calc(18px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); margin-bottom: 4px;">Sin alarmas programadas</div>
-  <div style="font-size: calc(14px * var(--vs-text-scale, 1)); color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6));">Di "Pon una alarma a las 7:00" para crear una.</div>
-</div>'''
+def resolve_card_entity(hass: HomeAssistant, alarm_id: str | None = None) -> str:
+    """Resolve the best entity ID for an alarm card."""
+    if alarm_id:
+        found = _find_alarm_entity_id(hass, alarm_id)
+        if found:
+            return found
 
-    rows = []
-    active_count = 0
-    for a in alarms:
-        time_str = a.get("time", "--:--")
-        name = a.get("name") or a.get("label") or "Alarma"
-        enabled = a.get("enabled", True)
-        if enabled:
-            active_count += 1
-        repeat = a.get("repeat", "once")
-        days = a.get("days") or (repeat if repeat != "once" else "Una vez")
+    if hasattr(hass, "states"):
+        try:
+            if hass.states.get("sensor.wakey_next_alarm") is not None:
+                return "sensor.wakey_next_alarm"
+        except Exception:
+            pass
 
-        badge = (
-            '<span style="font-size: calc(11px * var(--vs-text-scale, 1)); font-weight: 500; color: #81c995; background: rgba(129, 201, 149, 0.12); padding: 2px 6px; border-radius: 4px;">ACTIVA</span>'
-            if enabled
-            else '<span style="font-size: calc(11px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text-muted, #80868b); background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); padding: 2px 6px; border-radius: 4px;">OFF</span>'
-        )
-
-        rows.append(f'''
-    <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--df-divider, rgba(255, 255, 255, 0.08));">
-      <span style="width: 28%; font-size: calc(20px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); flex-shrink: 0;">{time_str}</span>
-      <span style="flex: 1; font-size: calc(15px * var(--vs-text-scale, 1)); color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px;">{name} • {days}</span>
-      <div>{badge}</div>
-    </div>''')
-
-    count_str = f"{active_count} activa{'s' if active_count != 1 else ''}"
-    return f'''<div class="vs-alarm-card" style="font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: var(--df-text, var(--primary-text-color, #e8eaed)); padding: 4px 2px;">
-  <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0 10px 0;">
-    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-      <ha-icon icon="mdi:alarm-multiple" style="color: var(--primary-color, #8ab4f8); --mdc-icon-size: 20px;"></ha-icon>
-    </div>
-    <div style="flex: 1; min-width: 0;">
-      <div style="font-size: calc(18px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed));">Tus Alarmas</div>
-    </div>
-    <span style="font-size: calc(12px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6)); background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); padding: 3px 8px; border-radius: 4px;">{count_str}</span>
-  </div>
-  <div style="height: 1px; background: var(--df-divider, rgba(255, 255, 255, 0.12)); margin: 4px 0 8px 0;"></div>
-  <div style="display: flex; flex-direction: column;">
-    {''.join(rows)}
-  </div>
-</div>'''
+    return "sensor.wakey_next_alarm"
 
 
 def build_alarm_card(
@@ -263,32 +202,89 @@ def build_alarm_card(
     highlight_alarm: dict | None = None,
     action: str = "scheduled",
 ) -> dict:
-    """Build a modern, original Lovelace card config for Voice Satellite card media panel."""
+    """Build a native Lovelace card config (tile or entities) matching the creator's design."""
     if action == "list" or (alarm_entries is not None and highlight_alarm is None):
-        html = _render_alarm_list_html(alarm_entries)
-    else:
-        # Default or single alarm hero view
-        if highlight_alarm is None:
-            wakey_data = get_wakey_data(hass)
-            alarms = wakey_data.store.async_all() if wakey_data else []
-            if alarms:
-                first = alarms[0]
-                highlight_alarm = {
-                    "time": first.time,
-                    "label": first.name,
-                    "repeat": first.repeat,
-                    "weekdays": first.weekdays,
-                    "media_player": first.media_player,
+        entries = alarm_entries or []
+        if not entries:
+            return {
+                "type": "tile",
+                "entity": resolve_card_entity(hass),
+                "name": "Sin alarmas programadas",
+                "icon": "mdi:alarm-off",
+                "color": "grey",
+            }
+
+        resolved_entities: list[dict[str, Any]] = []
+        for a in entries:
+            aid = a.get("alarm_id") or a.get("id")
+            ent_id = _find_alarm_entity_id(hass, aid) or resolve_card_entity(hass, aid)
+            t_str = a.get("time", "--:--")
+            name = a.get("name") or a.get("label") or "Alarma"
+            resolved_entities.append(
+                {
+                    "entity": ent_id,
+                    "name": f"{name} • {t_str}",
+                    "icon": "mdi:alarm" if a.get("enabled", True) else "mdi:alarm-off",
                 }
-        html = _render_alarm_hero_html(highlight_alarm, action)
+            )
+
+        if len(resolved_entities) == 1:
+            item = resolved_entities[0]
+            return {
+                "type": "tile",
+                "entity": item["entity"],
+                "name": item["name"],
+                "icon": item["icon"],
+                "color": "green",
+            }
+
+        return {
+            "type": "entities",
+            "title": "Alarmas",
+            "entities": resolved_entities,
+        }
+
+    # Single alarm action (scheduled, already_exists, reactivated, adjusted, cancelled, snoozed, stopped, testing)
+    info = highlight_alarm or {}
+    alarm_id = info.get("alarm_id") or info.get("id")
+    entity_id = resolve_card_entity(hass, alarm_id)
+
+    action_configs = {
+        "scheduled": ("mdi:alarm-check", "green"),
+        "reactivated": ("mdi:alarm-check", "blue"),
+        "already_exists": ("mdi:alarm", "amber"),
+        "adjusted": ("mdi:alarm-note", "blue"),
+        "cancelled": ("mdi:alarm-off", "red"),
+        "snoozed": ("mdi:alarm-snooze", "amber"),
+        "stopped": ("mdi:bell-off", "grey"),
+        "testing": ("mdi:bell-ring", "purple"),
+    }
+    icon, color = action_configs.get(action, ("mdi:alarm", "green"))
+
+    label = info.get("label") or info.get("name") or "Alarma"
+    time_str = info.get("time")
+
+    if action == "cancelled":
+        card_name = f"{label} (Cancelada)"
+    elif action == "stopped":
+        card_name = f"{label} (Detenida)"
+    elif action == "snoozed":
+        card_name = f"{label} (Pospuesta {time_str})" if time_str else f"{label} (Pospuesta)"
+    elif action == "testing":
+        card_name = f"{label} (Probando...)"
+    elif time_str and time_str != "--:--":
+        card_name = f"{label} • {time_str}"
+    else:
+        card_name = label
 
     return {
-        "type": "markdown",
-        "card_mod": {
-            "style": "ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }"
-        },
-        "content": html,
+        "type": "tile",
+        "entity": entity_id,
+        "name": card_name,
+        "icon": icon,
+        "color": color,
     }
+
 
 
 class BaseAlarmTool(BaseTool):

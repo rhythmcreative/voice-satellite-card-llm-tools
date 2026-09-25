@@ -282,6 +282,67 @@ def test_alarm_api_registration():
         assert api.name == ALARM_API_NAME
 
 
+def test_build_alarm_card():
+    """Test build_alarm_card returns native Lovelace cards."""
+    hass = MagicMock()
+    hass.states.get.return_value = None
+    hass.states.async_all.return_value = []
+
+    # Single alarm scheduled
+    card = build_alarm_card(
+        hass,
+        highlight_alarm={"alarm_id": "a1", "label": "Morning", "time": "07:00"},
+        action="scheduled",
+    )
+    assert card["type"] == "tile"
+    assert card["name"] == "Morning • 07:00"
+    assert card["icon"] == "mdi:alarm-check"
+    assert card["color"] == "green"
+
+    # Single alarm cancelled
+    card_cancel = build_alarm_card(
+        hass,
+        highlight_alarm={"alarm_id": "a1", "label": "Morning", "time": "07:00"},
+        action="cancelled",
+    )
+    assert card_cancel["type"] == "tile"
+    assert card_cancel["name"] == "Morning (Cancelada)"
+    assert card_cancel["icon"] == "mdi:alarm-off"
+    assert card_cancel["color"] == "red"
+
+    # List of multiple alarms -> entities card
+    card_list_multi = build_alarm_card(
+        hass,
+        alarm_entries=[
+            {"alarm_id": "a1", "name": "Work", "time": "07:00", "enabled": True},
+            {"alarm_id": "a2", "name": "Gym", "time": "18:00", "enabled": False},
+        ],
+        action="list",
+    )
+    assert card_list_multi["type"] == "entities"
+    assert card_list_multi["title"] == "Alarmas"
+    assert len(card_list_multi["entities"]) == 2
+    assert card_list_multi["entities"][0]["name"] == "Work • 07:00"
+    assert card_list_multi["entities"][0]["icon"] == "mdi:alarm"
+    assert card_list_multi["entities"][1]["name"] == "Gym • 18:00"
+    assert card_list_multi["entities"][1]["icon"] == "mdi:alarm-off"
+
+    # List of 1 alarm -> tile card
+    card_list_single = build_alarm_card(
+        hass,
+        alarm_entries=[{"alarm_id": "a1", "name": "Work", "time": "07:00"}],
+        action="list",
+    )
+    assert card_list_single["type"] == "tile"
+    assert card_list_single["name"] == "Work • 07:00"
+
+    # List with 0 alarms -> tile card empty state
+    card_list_empty = build_alarm_card(hass, alarm_entries=[], action="list")
+    assert card_list_empty["type"] == "tile"
+    assert card_list_empty["name"] == "Sin alarmas programadas"
+    assert card_list_empty["icon"] == "mdi:alarm-off"
+
+
 if __name__ == "__main__":
     print("Running tests...")
     test_parse_time()
@@ -292,4 +353,6 @@ if __name__ == "__main__":
     test_cancel_alarm_tool()
     test_snooze_and_stop_alarm_tools()
     test_alarm_api_registration()
+    test_build_alarm_card()
     print("ALL TESTS PASSED!")
+
