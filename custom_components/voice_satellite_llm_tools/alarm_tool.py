@@ -535,12 +535,19 @@ class ListAlarmsTool(BaseAlarmTool):
         if not wakey_data:
             return {
                 "alarms": [],
+                "count": 0,
                 "message": "Wakey integration is not available or has no active alarms.",
+                "card": build_alarm_card(hass, []),
             }
 
         alarms = wakey_data.store.async_all()
         if not alarms:
-            return {"alarms": [], "message": "No alarms are currently scheduled."}
+            return {
+                "alarms": [],
+                "count": 0,
+                "message": "No alarms are currently scheduled.",
+                "card": build_alarm_card(hass, []),
+            }
 
         ringing_dict = wakey_data.player.ringing
         res_list = []
