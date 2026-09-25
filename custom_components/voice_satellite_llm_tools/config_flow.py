@@ -27,6 +27,12 @@ from .const import (
     CONF_BRAVE_API_KEY,
     CONF_ENTITY_CARD_HISTORY_HOURS,
     CONF_ENTITY_CARD_MAX_ENTITIES,
+    CONF_ALARM_DEFAULT_AUTO_DISMISS_MINUTES,
+    CONF_ALARM_DEFAULT_MEDIA_PLAYER,
+    CONF_ALARM_DEFAULT_REPEAT_COUNT,
+    CONF_ALARM_DEFAULT_SNOOZE_MINUTES,
+    CONF_ALARM_DEFAULT_SOUND_URI,
+    CONF_ALARM_DEFAULT_VOLUME,
     CONF_BRAVE_IMAGE_NUM_RESULTS,
     CONF_BRAVE_SAFESEARCH,
     CONF_BRAVE_WEB_NUM_RESULTS,
@@ -57,10 +63,18 @@ from .const import (
     CONF_WIKIPEDIA_DETAIL_OPTIONS,
     CONF_YOUTUBE_API_KEY,
     CONF_YOUTUBE_NUM_RESULTS,
+    DEFAULT_ALARM_AUTO_DISMISS_MINUTES,
+    DEFAULT_ALARM_MEDIA_PLAYER,
+    DEFAULT_ALARM_REPEAT_COUNT,
+    DEFAULT_ALARM_SNOOZE_MINUTES,
+    DEFAULT_ALARM_SOUND_URI,
+    DEFAULT_ALARM_VOLUME,
     DOMAIN,
     ENTITY_CARD_DEFAULTS,
+    ALARM_DEFAULTS,
     FINANCIAL_DEFAULTS,
     IMAGE_SEARCH_DEFAULTS,
+    TOOL_TYPE_ALARM,
     TOOL_TYPE_ENTITY_CARD,
     TOOL_TYPE_FINANCIAL,
     TOOL_TYPE_IMAGE_SEARCH,
@@ -90,6 +104,7 @@ STEP_WEATHER = "weather"
 STEP_FINANCIAL_PROVIDER = "financial_provider"
 STEP_FINNHUB_FINANCIAL = "finnhub_financial"
 STEP_ENTITY_CARD = "entity_card"
+STEP_ALARM = "alarm"
 
 SAFESEARCH_OPTIONS = {
     "off": "Off",
@@ -335,6 +350,57 @@ def get_entity_card_schema(defaults: dict | None = None) -> vol.Schema:
     )
 
 
+def get_alarm_schema(defaults: dict | None = None) -> vol.Schema:
+    """Schema for Wakey Alarms configuration."""
+    d = defaults or ALARM_DEFAULTS
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_ALARM_DEFAULT_MEDIA_PLAYER,
+                default=d.get(CONF_ALARM_DEFAULT_MEDIA_PLAYER, DEFAULT_ALARM_MEDIA_PLAYER),
+            ): EntitySelector(EntitySelectorConfig(domain="media_player")),
+            vol.Optional(
+                CONF_ALARM_DEFAULT_SOUND_URI,
+                default=d.get(CONF_ALARM_DEFAULT_SOUND_URI, DEFAULT_ALARM_SOUND_URI),
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+            vol.Optional(
+                CONF_ALARM_DEFAULT_VOLUME,
+                default=d.get(CONF_ALARM_DEFAULT_VOLUME, DEFAULT_ALARM_VOLUME),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=0.0,
+                    max=1.0,
+                    step=0.05,
+                    mode=NumberSelectorMode.SLIDER,
+                )
+            ),
+            vol.Optional(
+                CONF_ALARM_DEFAULT_REPEAT_COUNT,
+                default=d.get(CONF_ALARM_DEFAULT_REPEAT_COUNT, DEFAULT_ALARM_REPEAT_COUNT),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    mode=NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Optional(
+                CONF_ALARM_DEFAULT_SNOOZE_MINUTES,
+                default=d.get(CONF_ALARM_DEFAULT_SNOOZE_MINUTES, DEFAULT_ALARM_SNOOZE_MINUTES),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1,
+                    max=120,
+                    step=1,
+                    mode=NumberSelectorMode.BOX,
+                    unit_of_measurement="min",
+                )
+            ),
+        }
+    )
+
+
 def get_financial_provider_schema() -> vol.Schema:
     """Schema for financial data provider selection step."""
     return vol.Schema(
@@ -464,6 +530,14 @@ class VoiceSatelliteLlmToolsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN)
             return self.async_show_form(
                 step_id=STEP_ENTITY_CARD,
                 data_schema=get_entity_card_schema(),
+            )
+
+        if tool_type == TOOL_TYPE_ALARM:
+            if self._existing_entry_for_tool_type(TOOL_TYPE_ALARM):
+                return self.async_abort(reason="alarm_already_configured")
+            return self.async_show_form(
+                step_id=STEP_ALARM,
+                data_schema=get_alarm_schema(),
             )
 
         return self.async_abort(reason="unknown_tool_type")
@@ -681,6 +755,21 @@ class VoiceSatelliteLlmToolsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(title="Entity Card", data=self.config_data)
 
+    async def async_step_alarm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Configure Alarms (Wakey) settings."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id=STEP_ALARM,
+                data_schema=get_alarm_schema(),
+            )
+
+        self.config_data.update(user_input)
+        await self.async_set_unique_id(f"{DOMAIN}_alarm")
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(title="Alarms (Wakey)", data=self.config_data)
+
     @staticmethod
     @callback
     def async_get_options_flow(
@@ -726,6 +815,9 @@ class VoiceSatelliteLlmToolsOptionsFlow(config_entries.OptionsFlow):
 
         if tool_type == TOOL_TYPE_ENTITY_CARD:
             return await self.async_step_entity_card(user_input)
+
+        if tool_type == TOOL_TYPE_ALARM:
+            return await self.async_step_alarm(user_input)
 
         return self.async_abort(reason="unknown_tool_type")
 
@@ -922,6 +1014,18 @@ class VoiceSatelliteLlmToolsOptionsFlow(config_entries.OptionsFlow):
             schema = get_entity_card_schema()
             schema = self.add_suggested_values_to_schema(schema, self.config_data)
             return self.async_show_form(step_id=STEP_ENTITY_CARD, data_schema=schema)
+
+        self.config_data.update(user_input)
+        return self.async_create_entry(data=self.config_data)
+
+    async def async_step_alarm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Options: Alarms (Wakey) settings."""
+        if user_input is None:
+            schema = get_alarm_schema()
+            schema = self.add_suggested_values_to_schema(schema, self.config_data)
+            return self.async_show_form(step_id=STEP_ALARM, data_schema=schema)
 
         self.config_data.update(user_input)
         return self.async_create_entry(data=self.config_data)

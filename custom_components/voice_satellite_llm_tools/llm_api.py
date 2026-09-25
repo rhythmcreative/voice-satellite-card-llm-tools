@@ -6,9 +6,21 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
+from .alarm_tool import (
+    AdjustAlarmTool,
+    CancelAlarmTool,
+    ListAlarmsTool,
+    SetAlarmTool,
+    SnoozeAlarmTool,
+    StopAlarmTool,
+    TestAlarmTool,
+)
 from .brave_image_search import BraveImageSearchTool
 from .brave_web_search import BraveWebSearchTool
 from .const import (
+    ALARM_API_ID,
+    ALARM_API_NAME,
+    ALARM_SERVICES_PROMPT,
     CONF_DAILY_WEATHER_ENTITY,
     ENTITY_CARD_API_ID,
     ENTITY_CARD_API_NAME,
@@ -31,6 +43,7 @@ from .const import (
     IMAGE_SEARCH_API_ID,
     IMAGE_SEARCH_API_NAME,
     IMAGE_SEARCH_SERVICES_PROMPT,
+    TOOL_TYPE_ALARM,
     TOOL_TYPE_ENTITY_CARD,
     TOOL_TYPE_FINANCIAL,
     TOOL_TYPE_IMAGE_SEARCH,
@@ -299,6 +312,39 @@ class EntityCardAPI(llm.API):
         )
 
 
+class AlarmAPI(llm.API):
+    """Alarms API for LLM integration powered by Wakey."""
+
+    def __init__(self, hass: HomeAssistant, config_data: dict[str, Any]) -> None:
+        """Initialize the Alarms API."""
+        super().__init__(
+            hass=hass,
+            id=ALARM_API_ID,
+            name=ALARM_API_NAME,
+        )
+        self._config_data = config_data
+
+    async def async_get_api_instance(
+        self, llm_context: llm.LLMContext
+    ) -> llm.APIInstance:
+        """Return an API instance with the Wakey alarm tools."""
+        tools = [
+            SetAlarmTool(self._config_data, self.hass),
+            ListAlarmsTool(self._config_data, self.hass),
+            CancelAlarmTool(self._config_data, self.hass),
+            SnoozeAlarmTool(self._config_data, self.hass),
+            StopAlarmTool(self._config_data, self.hass),
+            AdjustAlarmTool(self._config_data, self.hass),
+            TestAlarmTool(self._config_data, self.hass),
+        ]
+        return llm.APIInstance(
+            api=self,
+            api_prompt=ALARM_SERVICES_PROMPT,
+            llm_context=llm_context,
+            tools=tools,
+        )
+
+
 async def setup_llm_api(
     hass: HomeAssistant, config_data: dict[str, Any], entry_id: str
 ) -> None:
@@ -394,6 +440,15 @@ async def setup_llm_api(
             "unregister_api": unreg,
         }
         _LOGGER.info("Registered LLM API: %s", ENTITY_CARD_API_NAME)
+
+    elif tool_type == TOOL_TYPE_ALARM:
+        api = AlarmAPI(hass, config_data)
+        unreg = llm.async_register_api(hass, api)
+        hass.data[DOMAIN]["entries"][entry_id] = {
+            "config": config_data.copy(),
+            "unregister_api": unreg,
+        }
+        _LOGGER.info("Registered LLM API: %s", ALARM_API_NAME)
 
 
 async def cleanup_llm_api(hass: HomeAssistant, entry_id: str) -> None:

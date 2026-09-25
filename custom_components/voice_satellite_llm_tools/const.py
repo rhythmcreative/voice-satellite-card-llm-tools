@@ -13,6 +13,7 @@ TOOL_TYPE_WIKIPEDIA = "wikipedia"
 TOOL_TYPE_WEATHER = "weather"
 TOOL_TYPE_FINANCIAL = "financial_data"
 TOOL_TYPE_ENTITY_CARD = "entity_card"
+TOOL_TYPE_ALARM = "alarm"
 
 CONF_TOOL_TYPES = {
     TOOL_TYPE_IMAGE_SEARCH: "Image Search",
@@ -22,6 +23,7 @@ CONF_TOOL_TYPES = {
     TOOL_TYPE_WEATHER: "Weather Forecast",
     TOOL_TYPE_FINANCIAL: "Financial Data",
     TOOL_TYPE_ENTITY_CARD: "Entity Card",
+    TOOL_TYPE_ALARM: "Alarms (Wakey)",
 }
 
 # LLM API identifiers
@@ -99,6 +101,25 @@ ENTITY_CARD_SERVICES_PROMPT = (
     "is never the wrong choice for a request to see something.\n"
     "The card is a visual extra: always answer in speech as well, since the "
     "user may not be looking at a screen."
+)
+
+# Alarms (Wakey) LLM API identifiers
+ALARM_API_NAME = "Voice Satellite: Alarms"
+ALARM_API_ID = "voice_satellite_llm_tools_alarm"
+
+ALARM_SERVICES_PROMPT = (
+    "You may use the Alarms tools to manage alarm clocks powered by Wakey on the "
+    "user's smart speaker or display.\n"
+    "- 'set an alarm for 7:30 AM', 'wake me up at 8', 'set a daily alarm for 6 AM', "
+    "'alarma a las 7' -> CALL set_alarm with time, optional label, and optional recurring days.\n"
+    "- 'what alarms do I have', 'list my alarms', 'qué alarmas tengo' -> CALL list_alarms.\n"
+    "- 'cancel my 7 AM alarm', 'delete alarm', 'cancela la alarma', 'turn off all alarms' -> "
+    "CALL cancel_alarm with alarm_id, time, label, or cancel_all=True.\n"
+    "- 'snooze', 'snooze the alarm for 10 minutes', 'posponer alarma' -> CALL snooze_alarm.\n"
+    "- 'stop', 'silence the alarm', 'turn it off', 'apagar alarma', 'silencio' -> CALL stop_alarm.\n"
+    "- 'change my 7 AM alarm to 7:30', 'move alarm to 8 AM' -> CALL adjust_alarm with new time.\n"
+    "- 'test the alarm', 'prueba la alarma' -> CALL test_alarm.\n"
+    "Always confirm or summarize alarm actions naturally in speech, mentioning the time and label when relevant."
 )
 
 # Provider selection
@@ -233,4 +254,29 @@ DEFAULT_ENTITY_CARD_HISTORY_HOURS = 24
 ENTITY_CARD_DEFAULTS = {
     CONF_ENTITY_CARD_MAX_ENTITIES: DEFAULT_ENTITY_CARD_MAX_ENTITIES,
     CONF_ENTITY_CARD_HISTORY_HOURS: DEFAULT_ENTITY_CARD_HISTORY_HOURS,
+}
+
+# Alarm (Wakey) config keys
+CONF_ALARM_DEFAULT_MEDIA_PLAYER = "alarm_default_media_player"
+CONF_ALARM_DEFAULT_SOUND_URI = "alarm_default_sound_uri"
+CONF_ALARM_DEFAULT_VOLUME = "alarm_default_volume"
+CONF_ALARM_DEFAULT_REPEAT_COUNT = "alarm_default_repeat_count"
+CONF_ALARM_DEFAULT_SNOOZE_MINUTES = "alarm_default_snooze_minutes"
+CONF_ALARM_DEFAULT_AUTO_DISMISS_MINUTES = "alarm_default_auto_dismiss_minutes"
+
+DEFAULT_ALARM_MEDIA_PLAYER = ""
+DEFAULT_ALARM_SOUND_URI = "media-source://media_source/local/alarms/alarm_oxygen_gentle.mp3"
+DEFAULT_ALARM_VOLUME = 0.7
+DEFAULT_ALARM_REPEAT_COUNT = 0
+DEFAULT_ALARM_SNOOZE_MINUTES = 9
+DEFAULT_ALARM_AUTO_DISMISS_MINUTES = 30
+
+# Alarm defaults
+ALARM_DEFAULTS = {
+    CONF_ALARM_DEFAULT_MEDIA_PLAYER: DEFAULT_ALARM_MEDIA_PLAYER,
+    CONF_ALARM_DEFAULT_SOUND_URI: DEFAULT_ALARM_SOUND_URI,
+    CONF_ALARM_DEFAULT_VOLUME: DEFAULT_ALARM_VOLUME,
+    CONF_ALARM_DEFAULT_REPEAT_COUNT: DEFAULT_ALARM_REPEAT_COUNT,
+    CONF_ALARM_DEFAULT_SNOOZE_MINUTES: DEFAULT_ALARM_SNOOZE_MINUTES,
+    CONF_ALARM_DEFAULT_AUTO_DISMISS_MINUTES: DEFAULT_ALARM_AUTO_DISMISS_MINUTES,
 }

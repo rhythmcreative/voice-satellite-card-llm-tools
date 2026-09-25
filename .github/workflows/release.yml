@@ -22,7 +22,7 @@ jobs:
       - name: Create integration zip
         run: |
           cd custom_components/voice_satellite_llm_tools
-          zip -r ../../voice-satellite-llm-tools.zip .
+          zip -r ../../voice-satellite-llm-tools.zip . -x "*__pycache__*" -x "*.pyc"
 
       - name: Upload release assets
         env:

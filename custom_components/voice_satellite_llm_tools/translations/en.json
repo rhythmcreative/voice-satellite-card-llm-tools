@@ -130,6 +130,24 @@
           "entity_card_max_entities": "How many entities a single card may show. Extra entities in a request are dropped.",
           "entity_card_history_hours": "How far back the graph goes when the assistant is asked for history or a trend."
         }
+      },
+      "alarm": {
+        "title": "Configure Alarms (Wakey)",
+        "description": "Configure default speaker, sound, volume, and looping for voice alarms powered by Wakey.",
+        "data": {
+          "alarm_default_media_player": "Default Media Player",
+          "alarm_default_sound_uri": "Default Sound URI",
+          "alarm_default_volume": "Default Volume",
+          "alarm_default_repeat_count": "Repeat Count (0 = Loop continuously)",
+          "alarm_default_snooze_minutes": "Default Snooze (minutes)"
+        },
+        "data_description": {
+          "alarm_default_media_player": "The speaker or media player where alarms will ring by default.",
+          "alarm_default_sound_uri": "Audio URI or file path to play for the alarm (e.g. media-source://media_source/local/alarms/alarm_oxygen_gentle.mp3).",
+          "alarm_default_volume": "Volume level from 0.0 to 1.0.",
+          "alarm_default_repeat_count": "0 loops continuously until stopped or snoozed. Values > 0 play that many times.",
+          "alarm_default_snooze_minutes": "How many minutes to postpone the alarm when snoozed."
+        }
       }
     },
     "abort": {
@@ -141,7 +159,8 @@
       "financial_already_configured": "Financial Data is already configured. Use the existing entry's options to change settings.",
       "unknown_tool_type": "Unknown tool type selected.",
       "unknown_provider": "Unknown search provider selected.",
-      "entity_card_already_configured": "Entity Card is already configured. Use the existing entry's options to change settings."
+      "entity_card_already_configured": "Entity Card is already configured. Use the existing entry's options to change settings.",
+      "alarm_already_configured": "Alarms (Wakey) is already configured. Use the existing entry's options to change settings."
     }
   },
   "options": {
@@ -265,6 +284,24 @@
         "data_description": {
           "entity_card_max_entities": "How many entities a single card may show. Extra entities in a request are dropped.",
           "entity_card_history_hours": "How far back the graph goes when the assistant is asked for history or a trend."
+        }
+      },
+      "alarm": {
+        "title": "Alarms (Wakey) Options",
+        "description": "Update default speaker, sound, volume, or snooze settings for Wakey alarms.",
+        "data": {
+          "alarm_default_media_player": "Default Media Player",
+          "alarm_default_sound_uri": "Default Sound URI",
+          "alarm_default_volume": "Default Volume",
+          "alarm_default_repeat_count": "Repeat Count (0 = Loop continuously)",
+          "alarm_default_snooze_minutes": "Default Snooze (minutes)"
+        },
+        "data_description": {
+          "alarm_default_media_player": "The speaker or media player where alarms will ring by default.",
+          "alarm_default_sound_uri": "Audio URI or file path to play for the alarm.",
+          "alarm_default_volume": "Volume level from 0.0 to 1.0.",
+          "alarm_default_repeat_count": "0 loops continuously until stopped or snoozed. Values > 0 play that many times.",
+          "alarm_default_snooze_minutes": "How many minutes to postpone the alarm when snoozed."
         }
       }
     }

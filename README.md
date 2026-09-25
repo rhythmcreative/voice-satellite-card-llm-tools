@@ -30,6 +30,7 @@ Extend your voice assistant's capabilities with **web, Wikipedia, image, video s
   - [Weather Forecast](#weather-forecast)
   - [Financial Data](#financial-data)
   - [Entity Card](#entity-card)
+  - [Alarms (Wakey)](#alarms-wakey)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Setup](#setup)
@@ -51,6 +52,14 @@ This integration registers **LLM API tools** with Home Assistant. When a convers
 - "What's the price of Apple stock?"
 - "How much is Bitcoin right now?"
 - "Convert 100 USD to EUR"
+- "Set an alarm for 7:30 AM"
+- "Wake me up at 8 with an alarm for gym"
+- "Set an alarm for 6:30 AM every weekday"
+- "What alarms do I have?"
+- "Cancel my 7 AM alarm"
+- "Snooze"
+- "Stop the alarm"
+- "Change my 7 AM alarm to 7:30"
 
 > **Requires the [Voice Satellite](https://github.com/jxlarrea/voice-satellite-card-integration).** Without it, the tools still return data to the conversation agent but there will be no visual display.
 
@@ -95,6 +104,17 @@ Show Home Assistant entities on the satellite screen. Ask to see a camera, a lig
 
 Only entities exposed to your assistant can be drawn. The card is not interactive, since the satellite is a hands-free surface, and it needs Voice Satellite 2026.8.9 or newer.
 
+### Alarms (Wakey)
+
+Full Alexa-like voice alarm control powered by the [Wakey](https://github.com/rhythmcreative/wakey) integration:
+
+- **Schedule alarms (`set_alarm`)**: One-time or recurring alarms with custom labels, target speaker, volume, and continuous looping. Supports English and Spanish days of the week (`weekdays`, `laborables`, `weekends`, `fines de semana`, `daily`).
+- **List alarms (`list_alarms`)**: Summarizes upcoming alarms and displays an interactive Lovelace card.
+- **Cancel alarms (`cancel_alarm`)**: Cancel by alarm ID, time ("cancel my 7 AM alarm"), label ("cancel medicine alarm"), or cancel all at once.
+- **Snooze & Stop (`snooze_alarm`, `stop_alarm`)**: Instantly snooze (default 9 minutes) or silence ringing alarms.
+- **Adjust alarms (`adjust_alarm`)**: Shift the next occurrence to a new time.
+- **Test alarm (`test_alarm`)**: Preview the alarm audio on your speaker.
+
 ### Auto Display / Auto Play
 
 When the user asks for something specific (e.g. "show me the Mona Lisa"), the card automatically displays the first result. For broader searches, results appear as a browsable list.
@@ -138,6 +158,7 @@ Each tool is configured as a separate entry via **Settings > Devices & Services 
 | **Weather Forecast** | Select daily weather entity → optionally add hourly entity, temperature, and humidity sensors |
 | **Financial Data** | Select provider (Finnhub) → enter API key |
 | **Entity Card** | Set max entities per card and the history range |
+| **Alarms (Wakey)** | Select default media player, sound URI, volume, looping (0 = continuous), and snooze |
 
 > Only one entry per tool type is allowed. Use **Configure** to change settings, or remove the entry to disable a tool.
 
@@ -198,6 +219,11 @@ No API key required — uses your existing Home Assistant weather entities. You 
 | | Finnhub API Key | Your API key from [finnhub.io](https://finnhub.io/) |
 | **Entity Card** | Maximum Entities Per Card | 1-12 (default: 6). Extra entities in a request are dropped |
 | | History Range | 1-168 hours (default: 24). How far back the graph goes when history is requested |
+| **Alarms (Wakey)** | Default Media Player | Speaker or media player where alarms will sound |
+| | Default Sound URI | URI of alarm audio file (e.g. `media-source://media_source/local/alarms/alarm_oxygen_gentle.mp3`) |
+| | Default Volume | 0.0 - 1.0 (default: 0.7) |
+| | Repeat Count | 0 - 100 (default: 0). 0 loops continuously until stopped or snoozed |
+| | Snooze Minutes | 1 - 120 minutes (default: 9) |
 
 ## Troubleshooting
 
