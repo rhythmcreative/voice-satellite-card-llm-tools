@@ -211,67 +211,128 @@ def dismiss_voice_satellite_screensavers(hass: HomeAssistant) -> None:
         _LOGGER.debug("Could not dismiss voice satellite screensavers: %s", err)
 
 
+WEEKDAY_NAMES_ES = [
+    "Lunes",
+    "Martes",
+    "Miércoles",
+    "Jueves",
+    "Viernes",
+    "Sábado",
+    "Domingo",
+]
+WEEKDAY_SHORT_ES = [
+    "Lun",
+    "Mar",
+    "Mié",
+    "Jue",
+    "Vie",
+    "Sáb",
+    "Dom",
+]
+
+
+def format_alarm_days_display(
+    weekdays: list[int] | None, repeat: str | None = None, short: bool = False
+) -> str:
+    """Format weekdays/repeat in natural Spanish matching the UI mockups."""
+    if weekdays:
+        sorted_days = sorted(weekdays)
+        if sorted_days == [0, 1, 2, 3, 4]:
+            return "Lun-Vie" if short else "Lunes a Viernes"
+        if sorted_days == [5, 6]:
+            return "Sáb, Dom" if short else "Fines de semana"
+        if len(sorted_days) == 7:
+            return "Diario" if short else "Todos los días"
+        if short:
+            return ", ".join(WEEKDAY_SHORT_ES[d] for d in sorted_days)
+        return ", ".join(WEEKDAY_NAMES_ES[d] for d in sorted_days)
+    if repeat in ("once", "never", None, ""):
+        return "Una vez"
+    if repeat == "weekly":
+        return "Semanal"
+    return str(repeat).capitalize()
+
+
+def format_speaker_name(media_player: str | None) -> str:
+    """Extract a clean speaker label like 'Salón'."""
+    if not media_player:
+        return ""
+    name = media_player.replace("media_player.", "").replace("_", " ").strip()
+    return name.title()
+
+
 def _render_alarm_hero_html(alarm_info: dict | None, action: str = "scheduled") -> str:
-    """Render a clean, native alarm display matching Voice Satellite's UI tokens."""
+    """Render a clean, native alarm display matching assets/alarm.png."""
     info = alarm_info or {}
     time_str = info.get("time", "--:--")
     label = info.get("label") or info.get("name") or "Alarma"
     weekdays = info.get("weekdays")
-    days_str = info.get("days") or (info.get("repeat") if info.get("repeat") not in ("once", "never") else "Una vez")
+    repeat = info.get("repeat")
+    days_str = info.get("days")
+    if not days_str or isinstance(days_str, list):
+        days_str = format_alarm_days_display(weekdays, repeat, short=False)
+
     media_player = info.get("media_player")
+    clean_mp = format_speaker_name(media_player)
 
     action_configs = {
-        "scheduled": ("#81c995", "rgba(129, 201, 149, 0.12)", "mdi:alarm-check", "PROGRAMADA"),
-        "reactivated": ("#8ab4f8", "rgba(138, 180, 248, 0.12)", "mdi:alarm-check", "REACTIVADA"),
-        "already_exists": ("#fdd663", "rgba(253, 214, 99, 0.12)", "mdi:alarm", "YA EXISTE"),
-        "adjusted": ("#8ab4f8", "rgba(138, 180, 248, 0.12)", "mdi:alarm-note", "AJUSTADA"),
-        "cancelled": ("#f28b82", "rgba(242, 139, 130, 0.12)", "mdi:alarm-off", "CANCELADA"),
-        "snoozed": ("#fdd663", "rgba(253, 214, 99, 0.12)", "mdi:alarm-snooze", "POSPUESTA"),
-        "stopped": ("#9aa0a6", "rgba(154, 160, 166, 0.12)", "mdi:bell-off", "DETENIDA"),
-        "testing": ("#c58af9", "rgba(197, 138, 249, 0.12)", "mdi:bell-ring", "PROBANDO"),
+        "scheduled": ("#144024", "#a8dfb5", "PROGRAMADA"),
+        "reactivated": ("#041e49", "#aecbfa", "REACTIVADA"),
+        "already_exists": ("#4a3800", "#fde293", "YA EXISTE"),
+        "adjusted": ("#041e49", "#aecbfa", "AJUSTADA"),
+        "cancelled": ("#4a0c08", "#f6aea9", "CANCELADA"),
+        "snoozed": ("#4a3800", "#fde293", "POSPUESTA"),
+        "stopped": ("#e3e3e3", "rgba(255, 255, 255, 0.12)", "DETENIDA"),
+        "testing": ("#144024", "#a8dfb5", "PROBANDO"),
     }
-    color, bg, icon, default_status = action_configs.get(
+    text_color, pill_bg, default_status = action_configs.get(
         action, action_configs["scheduled"]
     )
     status_text = info.get("status_text") or default_status
 
-    speaker_info = ""
-    if media_player:
-        clean_mp = media_player.replace("media_player.", "").replace("_", " ").title()
-        speaker_info = f'<div style="font-size: calc(14px * var(--vs-text-scale, 1)); color: var(--df-text-muted, #80868b); margin-top: 4px;"><ha-icon icon="mdi:speaker" style="--mdc-icon-size: 15px; margin-right: 4px; vertical-align: -2px;"></ha-icon>{clean_mp}</div>'
+    speaker_html = ""
+    if clean_mp:
+        speaker_html = (
+            f'<div style="font-size: 20px; font-weight: 400; color: #a8a8a8; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;">'
+            f'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display: inline-block; vertical-align: middle;"><path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>'
+            f'<span>Altavoz: {clean_mp}</span>'
+            f'</div>'
+        )
 
-    return f'''<div class="vs-alarm-card" style="font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: var(--df-text, var(--primary-text-color, #e8eaed)); padding: 4px 2px;">
-  <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0 10px 0;">
-    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-      <ha-icon icon="{icon}" style="color: var(--primary-color, #8ab4f8); --mdc-icon-size: 20px;"></ha-icon>
-    </div>
-    <div style="flex: 1; min-width: 0;">
-      <div style="font-size: calc(18px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{label}</div>
-    </div>
-    <span style="font-size: calc(12px * var(--vs-text-scale, 1)); font-weight: 500; color: {color}; background: {bg}; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;">{status_text}</span>
-  </div>
+    alarm_svg = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="display: block;"><path d="M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22A9,9 0 0,0 21,13A9,9 0 0,0 12,4M12.5,8H11V14L16.2,17.2L17,15.9L12.5,13.2V8M22,5.7L17.7,2.2L16.4,3.8L20.7,7.3L22,5.7M6.3,3.8L5,2.2L0.7,5.7L2,7.3L6.3,3.8Z"/></svg>'
 
-  <div style="font-size: calc(52px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); line-height: 1.1; letter-spacing: -0.02em; padding: 4px 0 2px 0;">
-    {time_str}
-  </div>
-
-  <div style="font-size: calc(18px * var(--vs-text-scale, 1)); color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6)); margin-top: 4px;">
-    {days_str}
-  </div>
-  {speaker_info}
-</div>'''
+    return (
+        f'<div class="vs-alarm-card" style="background: #262729; border-radius: 28px; padding: 32px 36px; box-shadow: 0 12px 36px rgba(0,0,0,0.45); font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: #ffffff; box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto;">'
+        f'  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px;">'
+        f'    <div style="display: flex; align-items: center; gap: 14px; min-width: 0;">'
+        f'      <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #ffffff;">'
+        f'        {alarm_svg}'
+        f'      </div>'
+        f'      <div style="font-size: 26px; font-weight: 500; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{label}</div>'
+        f'    </div>'
+        f'    <span style="font-size: 15px; font-weight: 700; color: {text_color}; background: {pill_bg}; padding: 7px 22px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;">{status_text}</span>'
+        f'  </div>'
+        f'  <div style="font-size: 96px; font-weight: 400; color: #f7f6f0; line-height: 1; margin: 38px 0 16px 0; text-align: center; letter-spacing: -2px; font-family: \'Google Sans\', Roboto, sans-serif;">{time_str}</div>'
+        f'  <div style="font-size: 24px; font-weight: 400; color: #e3e3e3; text-align: center; margin-bottom: 12px;">{days_str}</div>'
+        f'  {speaker_html}'
+        f'</div>'
+    )
 
 
 def _render_alarm_list_html(alarms: list[dict] | None) -> str:
-    """Render a clean, native alarm list matching Voice Satellite's UI tokens."""
+    """Render a clean, native alarm list matching assets/alarm_list.png."""
+    alarm_svg = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="display: block;"><path d="M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22A9,9 0 0,0 21,13A9,9 0 0,0 12,4M12.5,8H11V14L16.2,17.2L17,15.9L12.5,13.2V8M22,5.7L17.7,2.2L16.4,3.8L20.7,7.3L22,5.7M6.3,3.8L5,2.2L0.7,5.7L2,7.3L6.3,3.8Z"/></svg>'
+
     if not alarms:
-        return '''<div class="vs-alarm-card" style="font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: var(--df-text, var(--primary-text-color, #e8eaed)); padding: 24px 8px; text-align: center;">
-  <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-    <ha-icon icon="mdi:alarm-off" style="color: var(--df-text-muted, #80868b); --mdc-icon-size: 24px;"></ha-icon>
-  </div>
-  <div style="font-size: calc(18px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); margin-bottom: 4px;">Sin alarmas programadas</div>
-  <div style="font-size: calc(14px * var(--vs-text-scale, 1)); color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6));">Di "Pon una alarma a las 7:00" para crear una.</div>
-</div>'''
+        return (
+            f'<div class="vs-alarm-card" style="background: #262729; border-radius: 28px; padding: 36px 36px; box-shadow: 0 12px 36px rgba(0,0,0,0.45); font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: #ffffff; box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto; text-align: center;">'
+            f'  <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #9aa0a6;">'
+            f'    {alarm_svg}'
+            f'  </div>'
+            f'  <div style="font-size: 24px; font-weight: 500; color: #ffffff; margin-bottom: 6px;">Sin alarmas programadas</div>'
+            f'  <div style="font-size: 16px; color: #a8a8a8;">Di "Pon una alarma a las 7:00" para crear una.</div>'
+            f'</div>'
+        )
 
     rows = []
     active_count = 0
@@ -282,37 +343,42 @@ def _render_alarm_list_html(alarms: list[dict] | None) -> str:
         if enabled:
             active_count += 1
         repeat = a.get("repeat", "once")
-        days = a.get("days") or (repeat if repeat not in ("once", "never") else "Una vez")
+        weekdays = a.get("weekdays")
+        days = a.get("days")
+        if not days or isinstance(days, list):
+            days = format_alarm_days_display(weekdays, repeat, short=True)
 
         badge = (
-            '<span style="font-size: calc(11px * var(--vs-text-scale, 1)); font-weight: 500; color: #81c995; background: rgba(129, 201, 149, 0.12); padding: 2px 6px; border-radius: 4px;">ACTIVA</span>'
+            '<span style="background: rgba(76, 175, 80, 0.18); color: #81c995; font-size: 14px; font-weight: 700; padding: 6px 18px; border-radius: 9999px; letter-spacing: 0.5px;">ACTIVA</span>'
             if enabled
-            else '<span style="font-size: calc(11px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text-muted, #80868b); background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); padding: 2px 6px; border-radius: 4px;">OFF</span>'
+            else '<span style="background: rgba(255, 255, 255, 0.08); color: #9aa0a6; font-size: 14px; font-weight: 700; padding: 6px 18px; border-radius: 9999px; letter-spacing: 0.5px;">OFF</span>'
         )
 
         rows.append(f'''
-    <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--df-divider, rgba(255, 255, 255, 0.08));">
-      <span style="width: 28%; font-size: calc(20px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed)); flex-shrink: 0;">{time_str}</span>
-      <span style="flex: 1; font-size: calc(15px * var(--vs-text-scale, 1)); color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px;">{name} • {days}</span>
-      <div>{badge}</div>
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
+      <span style="font-size: 46px; font-weight: 400; color: #ffffff; min-width: 130px; letter-spacing: -0.5px; flex-shrink: 0;">{time_str}</span>
+      <span style="flex: 1; font-size: 22px; font-weight: 400; color: #e3e3e5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 16px;">{name} • {days}</span>
+      <div style="flex-shrink: 0;">{badge}</div>
     </div>''')
 
     count_str = f"{active_count} activa{'s' if active_count != 1 else ''}"
-    return f'''<div class="vs-alarm-card" style="font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: var(--df-text, var(--primary-text-color, #e8eaed)); padding: 4px 2px;">
-  <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0 10px 0;">
-    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-      <ha-icon icon="mdi:alarm-multiple" style="color: var(--primary-color, #8ab4f8); --mdc-icon-size: 20px;"></ha-icon>
-    </div>
-    <div style="flex: 1; min-width: 0;">
-      <div style="font-size: calc(18px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text, var(--primary-text-color, #e8eaed));">Tus Alarmas</div>
-    </div>
-    <span style="font-size: calc(12px * var(--vs-text-scale, 1)); font-weight: 500; color: var(--df-text-secondary, var(--secondary-text-color, #9aa0a6)); background: var(--df-badge-bg, rgba(255, 255, 255, 0.08)); padding: 3px 8px; border-radius: 4px;">{count_str}</span>
-  </div>
-  <div style="height: 1px; background: var(--df-divider, rgba(255, 255, 255, 0.12)); margin: 4px 0 8px 0;"></div>
-  <div style="display: flex; flex-direction: column;">
-    {''.join(rows)}
-  </div>
-</div>'''
+    return (
+        f'<div class="vs-alarm-card" style="background: #262729; border-radius: 28px; padding: 32px 36px; box-shadow: 0 12px 36px rgba(0,0,0,0.45); font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: #ffffff; box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto;">'
+        f'  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">'
+        f'    <div style="display: flex; align-items: center; gap: 14px; min-width: 0;">'
+        f'      <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #ffffff;">'
+        f'        {alarm_svg}'
+        f'      </div>'
+        f'      <div style="font-size: 26px; font-weight: 500; color: #ffffff;">Tus Alarmas</div>'
+        f'    </div>'
+        f'    <span style="font-size: 15px; font-weight: 600; color: #e3e3e3; background: rgba(255, 255, 255, 0.12); padding: 6px 18px; border-radius: 9999px; flex-shrink: 0;">{count_str}</span>'
+        f'  </div>'
+        f'  <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 20px 0 10px 0;"></div>'
+        f'  <div style="display: flex; flex-direction: column;">'
+        f'    {"".join(rows)}'
+        f'  </div>'
+        f'</div>'
+    )
 
 
 def build_alarm_card(
