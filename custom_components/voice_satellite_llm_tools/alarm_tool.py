@@ -276,14 +276,14 @@ def _render_alarm_hero_html(alarm_info: dict | None, action: str = "scheduled") 
     clean_mp = format_speaker_name(media_player)
 
     action_configs = {
-        "scheduled": ("#144024", "#a8dfb5", "PROGRAMADA"),
+        "scheduled": ("#137333", "#c3e8cd", "PROGRAMADA"),
         "reactivated": ("#041e49", "#aecbfa", "REACTIVADA"),
         "already_exists": ("#4a3800", "#fde293", "YA EXISTE"),
         "adjusted": ("#041e49", "#aecbfa", "AJUSTADA"),
         "cancelled": ("#4a0c08", "#f6aea9", "CANCELADA"),
         "snoozed": ("#4a3800", "#fde293", "POSPUESTA"),
         "stopped": ("#e3e3e3", "rgba(255, 255, 255, 0.12)", "DETENIDA"),
-        "testing": ("#144024", "#a8dfb5", "PROBANDO"),
+        "testing": ("#137333", "#c3e8cd", "PROGRAMADA"),
     }
     text_color, pill_bg, default_status = action_configs.get(
         action, action_configs["scheduled"]
@@ -293,7 +293,7 @@ def _render_alarm_hero_html(alarm_info: dict | None, action: str = "scheduled") 
     speaker_html = ""
     if clean_mp:
         speaker_html = (
-            f'<div style="font-size: 20px; font-weight: 400; color: #a8a8a8; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;">'
+            f'<div style="font-size: 19px; font-weight: 400; color: #dadce0; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">'
             f'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display: inline-block; vertical-align: middle;"><path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>'
             f'<span>Altavoz: {clean_mp}</span>'
             f'</div>'
@@ -302,18 +302,18 @@ def _render_alarm_hero_html(alarm_info: dict | None, action: str = "scheduled") 
     alarm_svg = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="display: block;"><path d="M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22A9,9 0 0,0 21,13A9,9 0 0,0 12,4M12.5,8H11V14L16.2,17.2L17,15.9L12.5,13.2V8M22,5.7L17.7,2.2L16.4,3.8L20.7,7.3L22,5.7M6.3,3.8L5,2.2L0.7,5.7L2,7.3L6.3,3.8Z"/></svg>'
 
     return (
-        f'<div class="vs-alarm-card" style="background: #262729; border-radius: 28px; padding: 32px 36px; box-shadow: 0 12px 36px rgba(0,0,0,0.45); font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: #ffffff; box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto;">'
+        f'<div class="vs-alarm-card" style="background: #282a2d; border-radius: 28px; padding: 38px 42px 34px 42px; box-shadow: 0 24px 60px rgba(0,0,0,0.65); font-family: \'Google Sans\', Roboto, -apple-system, sans-serif; color: #ffffff; box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto;">'
         f'  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px;">'
         f'    <div style="display: flex; align-items: center; gap: 14px; min-width: 0;">'
         f'      <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #ffffff;">'
         f'        {alarm_svg}'
         f'      </div>'
-        f'      <div style="font-size: 26px; font-weight: 500; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{label}</div>'
+        f'      <div style="font-size: 24px; font-weight: 400; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{label}</div>'
         f'    </div>'
-        f'    <span style="font-size: 15px; font-weight: 700; color: {text_color}; background: {pill_bg}; padding: 7px 22px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;">{status_text}</span>'
+        f'    <span style="font-size: 13px; font-weight: 700; color: {text_color}; background: {pill_bg}; padding: 6px 18px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0;">{status_text}</span>'
         f'  </div>'
-        f'  <div style="font-size: 96px; font-weight: 400; color: #f7f6f0; line-height: 1; margin: 38px 0 16px 0; text-align: center; letter-spacing: -2px; font-family: \'Google Sans\', Roboto, sans-serif;">{time_str}</div>'
-        f'  <div style="font-size: 24px; font-weight: 400; color: #e3e3e3; text-align: center; margin-bottom: 12px;">{days_str}</div>'
+        f'  <div style="font-size: 96px; font-weight: 400; color: #f7f6f2; line-height: 1; margin: 36px 0 16px 0; text-align: center; letter-spacing: -2px; font-family: \'Google Sans\', Roboto, sans-serif;">{time_str}</div>'
+        f'  <div style="font-size: 24px; font-weight: 400; color: #e8eaed; text-align: center; margin-bottom: 12px;">{days_str}</div>'
         f'  {speaker_html}'
         f'</div>'
     )
@@ -1156,7 +1156,8 @@ class TestAlarmTool(BaseAlarmTool):
                     highlight_alarm={
                         "time": test_alarm.time,
                         "label": test_alarm.name,
-                        "days": "Probando sonido",
+                        "repeat": test_alarm.repeat,
+                        "weekdays": test_alarm.weekdays,
                         "media_player": test_alarm.media_player,
                     },
                     action="testing",
