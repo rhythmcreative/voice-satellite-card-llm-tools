@@ -35,26 +35,6 @@ When a conversation agent (OpenAI, Google Generative AI, Anthropic, Ollama, etc.
 
 ______________________________________________________________________
 
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=23&pause=1000&color=F7F7F7&vCenter=true&width=435&height=30&lines=VOICE+COMMANDS)](https://git.io/typing-svg)
-
-- *"Set an alarm for 7:30 AM"*
-- *"Wake me up at 8 with an alarm for gym"*
-- *"Set an alarm for 6:30 AM every weekday"*
-- *"What alarms do I have?"*
-- *"Cancel my 7 AM alarm"*
-- *"Stop the alarm"* / *"Snooze"*
-- *"Change my 7 AM alarm to 7:30"*
-- *"Search the web for best restaurants in Tokyo"*
-- *"Tell me about Marie Curie"*
-- *"Show me pictures of golden retrievers"*
-- *"Search for videos on how to make sourdough bread"*
-- *"What's the weather like tomorrow?"*
-- *"What's the price of Apple stock?"*
-- *"How much is Bitcoin right now?"*
-- *"Show the living room camera"*
-
-______________________________________________________________________
-
 [![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=23&pause=1000&color=F7F7F7&vCenter=true&width=435&height=30&lines=FEATURES)](https://git.io/typing-svg)
 
 ### Alarms (Wakey)
