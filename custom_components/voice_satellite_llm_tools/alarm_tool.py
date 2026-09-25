@@ -196,6 +196,21 @@ def resolve_card_entity(hass: HomeAssistant, alarm_id: str | None = None) -> str
     return "sensor.wakey_next_alarm"
 
 
+def dismiss_voice_satellite_screensavers(hass: HomeAssistant) -> None:
+    """Wake up all Voice Satellite screensavers so cards are immediately visible."""
+    try:
+        if not hasattr(hass, "data") or not isinstance(hass.data, dict):
+            return
+        vs_entries = hass.data.get("voice_satellite", {})
+        if not isinstance(vs_entries, dict):
+            return
+        for ent in vs_entries.values():
+            if hasattr(ent, "_push_satellite_event"):
+                ent._push_satellite_event("dismiss_screensaver", {})
+    except Exception as err:
+        _LOGGER.debug("Could not dismiss voice satellite screensavers: %s", err)
+
+
 def build_alarm_card(
     hass: HomeAssistant,
     alarm_entries: list[dict] | None = None,
@@ -203,6 +218,7 @@ def build_alarm_card(
     action: str = "scheduled",
 ) -> dict:
     """Build a native Lovelace card config (tile or entities) matching the creator's design."""
+    dismiss_voice_satellite_screensavers(hass)
     if action == "list" or (alarm_entries is not None and highlight_alarm is None):
         entries = alarm_entries or []
         if not entries:
