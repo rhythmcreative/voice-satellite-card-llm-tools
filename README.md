@@ -106,6 +106,8 @@ Only entities exposed to your assistant can be drawn. The card is not interactiv
 
 ### Alarms (Wakey)
 
+![Alarms](https://raw.githubusercontent.com/rhythmcreative/voice-satellite-card-llm-tools/refs/heads/main/assets/alarm.png)
+
 Full Alexa-like voice alarm control powered by the [Wakey](https://github.com/rhythmcreative/wakey) integration:
 
 - **Schedule alarms (`set_alarm`)**: One-time or recurring alarms with custom labels, target speaker, volume, and continuous looping. Supports English and Spanish days of the week (`weekdays`, `laborables`, `weekends`, `fines de semana`, `daily`).
