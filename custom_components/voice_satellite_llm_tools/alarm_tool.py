@@ -153,38 +153,167 @@ def get_default_media_player(hass: HomeAssistant, config: dict) -> str:
     return configured or "media_player.voice_satellite"
 
 
-def build_alarm_card(hass: HomeAssistant, alarm_entries: list[dict] | None = None) -> dict:
-    """Build a Lovelace card config for Voice Satellite card media panel."""
-    entities = []
-    if hass.states.get("binary_sensor.wakey_ringing"):
-        entities.append("binary_sensor.wakey_ringing")
-    if hass.states.get("sensor.wakey_next_alarm"):
-        entities.append("sensor.wakey_next_alarm")
+def _render_alarm_hero_html(alarm_info: dict | None, action: str = "scheduled") -> str:
+    """Render a modern, high-end digital clock hero card."""
+    info = alarm_info or {}
+    time_str = info.get("time", "--:--")
+    label = info.get("label") or info.get("name") or "Alarma"
+    weekdays = info.get("weekdays")
+    days_str = info.get("days") or (info.get("repeat") if info.get("repeat") != "once" else "Una vez")
+    media_player = info.get("media_player")
 
-    for state in hass.states.async_all():
-        if state.domain in ("switch", "time") and "alarm" in state.entity_id:
-            if state.entity_id not in entities:
-                entities.append(state.entity_id)
+    action_configs = {
+        "scheduled": ("#4caf50", "rgba(76, 175, 80, 0.15)", "rgba(76, 175, 80, 0.35)", "mdi:alarm-check", "PROGRAMADA"),
+        "reactivated": ("#00bcd4", "rgba(0, 188, 212, 0.15)", "rgba(0, 188, 212, 0.35)", "mdi:alarm-check", "REACTIVADA"),
+        "already_exists": ("#ff9800", "rgba(255, 152, 0, 0.15)", "rgba(255, 152, 0, 0.35)", "mdi:alarm", "CONFIGURADA"),
+        "adjusted": ("#2196f3", "rgba(33, 150, 243, 0.15)", "rgba(33, 150, 243, 0.35)", "mdi:alarm-note", "HORA AJUSTADA"),
+        "cancelled": ("#f44336", "rgba(244, 67, 54, 0.15)", "rgba(244, 67, 54, 0.35)", "mdi:alarm-off", "CANCELADA"),
+        "snoozed": ("#ffb300", "rgba(255, 179, 0, 0.15)", "rgba(255, 179, 0, 0.35)", "mdi:alarm-snooze", "POSPUESTA"),
+        "stopped": ("#9e9e9e", "rgba(158, 158, 158, 0.15)", "rgba(158, 158, 158, 0.35)", "mdi:bell-off", "DETENIDA"),
+        "testing": ("#ab47bc", "rgba(171, 71, 188, 0.15)", "rgba(171, 71, 188, 0.35)", "mdi:bell-ring", "SONANDO"),
+    }
+    color, bg, border, icon, default_status = action_configs.get(
+        action, action_configs["scheduled"]
+    )
+    status_text = info.get("status_text") or default_status
 
-    if entities:
-        return {
-            "type": "entities",
-            "title": "Alarms",
-            "entities": entities[:8],
-        }
+    day_chips = ""
+    if weekdays is not None and len(weekdays) > 0:
+        day_labels = ["L", "M", "X", "J", "V", "S", "D"]
+        chips = []
+        for i, l in enumerate(day_labels):
+            if i in weekdays:
+                chips.append(
+                    f'<span style="width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; background: var(--primary-color, #03a9f4); color: #ffffff; box-shadow: 0 2px 6px rgba(var(--rgb-primary-color, 33, 150, 243), 0.35);">{l}</span>'
+                )
+            else:
+                chips.append(
+                    f'<span style="width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08);">{l}</span>'
+                )
+        day_chips = f'<div style="display: flex; gap: 6px; justify-content: center; margin-top: 14px;">{"".join(chips)}</div>'
 
-    if alarm_entries:
-        lines = [
-            f"- **{a.get('time', '')}**: {a.get('name', 'Alarm')} ({a.get('repeat', 'once')})"
-            for a in alarm_entries
-        ]
-        return {
-            "type": "markdown",
-            "title": "Alarms",
-            "content": "\n".join(lines),
-        }
+    speaker_badge = ""
+    if media_player:
+        clean_mp = media_player.replace("media_player.", "").replace("_", " ").title()
+        speaker_badge = f'<div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: var(--secondary-text-color, #b0bec5);"><ha-icon icon="mdi:speaker" style="--mdc-icon-size: 16px;"></ha-icon>{clean_mp}</div>'
 
-    return {"type": "markdown", "title": "Alarms", "content": "No alarms scheduled."}
+    return f'''<div style="box-sizing: border-box; width: 100%; border-radius: 24px; overflow: hidden; background: linear-gradient(145deg, rgba(var(--rgb-card-background-color, 28, 28, 30), 0.96) 0%, rgba(var(--rgb-primary-color, 33, 150, 243), 0.1) 100%); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.25); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35); padding: 22px 24px; font-family: var(--ha-font-family, system-ui, -apple-system, sans-serif); color: var(--primary-text-color, #ffffff);">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 44px; height: 44px; border-radius: 14px; background: {bg}; border: 1px solid {border}; display: flex; align-items: center; justify-content: center;">
+        <ha-icon icon="{icon}" style="color: {color}; --mdc-icon-size: 26px;"></ha-icon>
+      </div>
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--secondary-text-color, #90a4ae); font-weight: 700;">Wakey Alarms</div>
+        <div style="font-size: 18px; font-weight: 700; color: var(--primary-text-color, #ffffff); line-height: 1.2;">{label}</div>
+      </div>
+    </div>
+    <div style="padding: 5px 12px; border-radius: 20px; background: {bg}; color: {color}; border: 1px solid {border}; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; letter-spacing: 0.04em;">
+      <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: {color}; box-shadow: 0 0 8px {color};"></span>
+      {status_text}
+    </div>
+  </div>
+
+  <div style="margin: 22px 0 14px 0; text-align: center;">
+    <div style="font-size: 72px; font-weight: 800; letter-spacing: -2px; line-height: 1; color: var(--primary-text-color, #ffffff); text-shadow: 0 4px 20px rgba(var(--rgb-primary-color, 33, 150, 243), 0.35); font-variant-numeric: tabular-nums;">
+      {time_str}
+    </div>
+  </div>
+
+  {day_chips}
+
+  <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
+    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 12px; background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.12); color: var(--primary-text-color, #ffffff); font-size: 13px; font-weight: 600; border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.25);">
+      <ha-icon icon="mdi:calendar-repeat" style="--mdc-icon-size: 17px; color: var(--primary-color, #03a9f4);"></ha-icon>
+      {days_str}
+    </div>
+    {speaker_badge}
+  </div>
+</div>'''
+
+
+def _render_alarm_list_html(alarms: list[dict] | None) -> str:
+    """Render a clean, modern alarm dashboard list."""
+    if not alarms:
+        return '''<div style="box-sizing: border-box; width: 100%; border-radius: 24px; padding: 36px 20px; text-align: center; background: linear-gradient(145deg, rgba(var(--rgb-card-background-color, 28, 28, 30), 0.96) 0%, rgba(var(--rgb-primary-color, 33, 150, 243), 0.08) 100%); border: 1px solid rgba(255, 255, 255, 0.08); font-family: var(--ha-font-family, system-ui, sans-serif); color: var(--primary-text-color, #ffffff);">
+  <div style="width: 60px; height: 60px; border-radius: 20px; background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.12); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.25); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+    <ha-icon icon="mdi:alarm-off" style="color: var(--primary-color, #03a9f4); --mdc-icon-size: 32px;"></ha-icon>
+  </div>
+  <div style="font-size: 20px; font-weight: 700; margin-bottom: 6px;">Sin alarmas programadas</div>
+  <div style="font-size: 14px; color: var(--secondary-text-color, #90a4ae); max-width: 280px; margin: 0 auto;">Di <span style="color: var(--primary-color, #03a9f4); font-weight: 600;">"Pon una alarma a las 7:00"</span> para crear una nueva alarma.</div>
+</div>'''
+
+    rows = []
+    active_count = 0
+    for a in alarms:
+        time_str = a.get("time", "--:--")
+        name = a.get("name") or a.get("label") or "Alarma"
+        enabled = a.get("enabled", True)
+        if enabled:
+            active_count += 1
+        repeat = a.get("repeat", "once")
+        days = a.get("days") or (repeat if repeat != "once" else "Una vez")
+
+        status_badge = (
+            '<span style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3);">ACTIVA</span>'
+            if enabled
+            else '<span style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(255, 255, 255, 0.05); color: var(--secondary-text-color, #888); border: 1px solid rgba(255, 255, 255, 0.08);">DESACTIVADA</span>'
+        )
+
+        rows.append(f'''
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); margin-bottom: 8px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="font-size: 26px; font-weight: 800; color: var(--primary-text-color, #ffffff); font-variant-numeric: tabular-nums;">{time_str}</div>
+        <div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--primary-text-color, #ffffff); line-height: 1.2;">{name}</div>
+          <div style="font-size: 12px; color: var(--secondary-text-color, #90a4ae);">{days}</div>
+        </div>
+      </div>
+      <div>{status_badge}</div>
+    </div>''')
+
+    count_str = f"{active_count} activa{'s' if active_count != 1 else ''}"
+    return f'''<div style="box-sizing: border-box; width: 100%; border-radius: 24px; padding: 20px 22px; background: linear-gradient(145deg, rgba(var(--rgb-card-background-color, 28, 28, 30), 0.96) 0%, rgba(var(--rgb-primary-color, 33, 150, 243), 0.08) 100%); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.25); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35); font-family: var(--ha-font-family, system-ui, sans-serif); color: var(--primary-text-color, #ffffff);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <ha-icon icon="mdi:alarm-multiple" style="color: var(--primary-color, #03a9f4); --mdc-icon-size: 24px;"></ha-icon>
+      <div style="font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Tus Alarmas</div>
+    </div>
+    <div style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.15); color: var(--primary-color, #03a9f4); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.3);">{count_str}</div>
+  </div>
+  {''.join(rows)}
+</div>'''
+
+
+def build_alarm_card(
+    hass: HomeAssistant,
+    alarm_entries: list[dict] | None = None,
+    highlight_alarm: dict | None = None,
+    action: str = "scheduled",
+) -> dict:
+    """Build a modern, original Lovelace card config for Voice Satellite card media panel."""
+    if action == "list" or (alarm_entries is not None and highlight_alarm is None):
+        html = _render_alarm_list_html(alarm_entries)
+    else:
+        # Default or single alarm hero view
+        if highlight_alarm is None:
+            wakey_data = get_wakey_data(hass)
+            alarms = wakey_data.store.async_all() if wakey_data else []
+            if alarms:
+                first = alarms[0]
+                highlight_alarm = {
+                    "time": first.time,
+                    "label": first.name,
+                    "repeat": first.repeat,
+                    "weekdays": first.weekdays,
+                    "media_player": first.media_player,
+                }
+        html = _render_alarm_hero_html(highlight_alarm, action)
+
+    return {
+        "type": "markdown",
+        "content": html,
+    }
 
 
 class BaseAlarmTool(BaseTool):
@@ -301,6 +430,11 @@ class SetAlarmTool(BaseAlarmTool):
             for a in wakey_data.store.async_all():
                 if a.time == time_formatted:
                     if (weekdays and a.weekdays == weekdays) or (not weekdays and a.repeat == "once"):
+                        days_summary = (
+                            ", ".join(WEEKDAY_NAMES_EN[d] for d in weekdays)
+                            if weekdays
+                            else (date_str or "next occurrence")
+                        )
                         if a.enabled:
                             return {
                                 "status": "already_exists",
@@ -308,9 +442,20 @@ class SetAlarmTool(BaseAlarmTool):
                                 "time": time_formatted,
                                 "label": a.name,
                                 "repeat": a.repeat,
-                                "days": ", ".join(WEEKDAY_NAMES_EN[d] for d in weekdays) if weekdays else (date_str or "next occurrence"),
+                                "days": days_summary,
                                 "media_player": a.media_player or media_player,
-                                "card": build_alarm_card(hass),
+                                "card": build_alarm_card(
+                                    hass,
+                                    highlight_alarm={
+                                        "time": time_formatted,
+                                        "label": a.name,
+                                        "repeat": a.repeat,
+                                        "weekdays": weekdays,
+                                        "days": days_summary,
+                                        "media_player": a.media_player or media_player,
+                                    },
+                                    action="already_exists",
+                                ),
                                 "instruction": f"Inform the user that an alarm is already configured for {time_formatted}.",
                             }
                         wakey_data.store.async_update(a.id, {"enabled": True})
@@ -320,9 +465,20 @@ class SetAlarmTool(BaseAlarmTool):
                             "time": time_formatted,
                             "label": a.name,
                             "repeat": a.repeat,
-                            "days": ", ".join(WEEKDAY_NAMES_EN[d] for d in weekdays) if weekdays else (date_str or "next occurrence"),
+                            "days": days_summary,
                             "media_player": a.media_player or media_player,
-                            "card": build_alarm_card(hass),
+                            "card": build_alarm_card(
+                                hass,
+                                highlight_alarm={
+                                    "time": time_formatted,
+                                    "label": a.name,
+                                    "repeat": a.repeat,
+                                    "weekdays": weekdays,
+                                    "days": days_summary,
+                                    "media_player": a.media_player or media_player,
+                                },
+                                action="reactivated",
+                            ),
                             "instruction": f"Confirm that the existing alarm for {time_formatted} has been re-enabled.",
                         }
 
@@ -371,7 +527,18 @@ class SetAlarmTool(BaseAlarmTool):
             "repeat": repeat,
             "days": day_summary,
             "media_player": media_player,
-            "card": build_alarm_card(hass),
+            "card": build_alarm_card(
+                hass,
+                highlight_alarm={
+                    "time": time_formatted,
+                    "label": label,
+                    "repeat": repeat,
+                    "weekdays": weekdays,
+                    "days": day_summary,
+                    "media_player": media_player,
+                },
+                action="scheduled",
+            ),
             "instruction": "Confirm the alarm naturally in speech, mentioning the time and label.",
         }
 
@@ -494,7 +661,11 @@ class CancelAlarmTool(BaseAlarmTool):
                 "status": "cancelled_all",
                 "count": count,
                 "message": f"Cancelled all {count} alarms.",
-                "card": build_alarm_card(hass),
+                "card": build_alarm_card(
+                    hass,
+                    highlight_alarm={"time": "--:--", "label": "Todas las alarmas", "days": "Canceladas", "status": "CANCELADAS"},
+                    action="cancelled",
+                ),
             }
 
         # Match specific alarm(s)
@@ -538,10 +709,20 @@ class CancelAlarmTool(BaseAlarmTool):
             wakey_data.store.async_delete(a.id)
             deleted_info.append({"alarm_id": a.id, "time": a.time, "label": a.name})
 
+        first_del = deleted_info[0] if deleted_info else {}
         return {
             "status": "cancelled",
             "cancelled": deleted_info,
-            "card": build_alarm_card(hass),
+            "card": build_alarm_card(
+                hass,
+                highlight_alarm={
+                    "time": first_del.get("time", "--:--"),
+                    "label": first_del.get("label", "Alarma"),
+                    "days": "Cancelada",
+                    "status": "CANCELADA",
+                },
+                action="cancelled",
+            ),
             "instruction": "Confirm the cancellation naturally in speech.",
         }
 
@@ -590,6 +771,16 @@ class SnoozeAlarmTool(BaseAlarmTool):
             return {
                 "status": "snoozed",
                 "minutes": minutes,
+                "card": build_alarm_card(
+                    hass,
+                    highlight_alarm={
+                        "time": f"+{minutes}m",
+                        "label": "Alarma pospuesta",
+                        "days": f"Pospuesta {minutes} min",
+                        "status": "POSPUESTA",
+                    },
+                    action="snoozed",
+                ),
                 "instruction": f"Inform the user the alarm is snoozed for {minutes} minutes.",
             }
 
@@ -638,14 +829,29 @@ class StopAlarmTool(BaseAlarmTool):
                     "message": "No alarm is currently ringing.",
                 }
             await wakey_data.player.async_dismiss(alarm_id)
-            return {"status": "stopped", "message": "Alarm stopped."}
+            return {
+                "status": "stopped",
+                "message": "Alarm stopped.",
+                "card": build_alarm_card(
+                    hass,
+                    highlight_alarm={"time": "--:--", "label": "Alarma detenida", "days": "Detenida", "status": "DETENIDA"},
+                    action="stopped",
+                ),
+            }
 
         try:
             call_data = {}
             if alarm_id:
                 call_data["alarm_id"] = alarm_id
             await hass.services.async_call("wakey", "dismiss", call_data, blocking=True)
-            return {"status": "stopped"}
+            return {
+                "status": "stopped",
+                "card": build_alarm_card(
+                    hass,
+                    highlight_alarm={"time": "--:--", "label": "Alarma detenida", "days": "Detenida", "status": "DETENIDA"},
+                    action="stopped",
+                ),
+            }
         except Exception as e:
             return {"error": f"Failed to stop alarm: {e}"}
 
@@ -759,7 +965,18 @@ class AdjustAlarmTool(BaseAlarmTool):
             "alarm_id": target_alarm.id,
             "label": target_alarm.name,
             "new_time": new_time_str,
-            "card": build_alarm_card(hass),
+            "card": build_alarm_card(
+                hass,
+                highlight_alarm={
+                    "time": new_time_str,
+                    "label": target_alarm.name,
+                    "repeat": target_alarm.repeat,
+                    "weekdays": target_alarm.weekdays,
+                    "days": f"Ajustada a {new_time_str}",
+                    "media_player": target_alarm.media_player,
+                },
+                action="adjusted",
+            ),
             "instruction": f"Confirm that the {target_alarm.name} alarm has been adjusted to {new_time_str}.",
         }
 
@@ -804,6 +1021,16 @@ class TestAlarmTool(BaseAlarmTool):
                 "status": "playing",
                 "alarm_id": test_alarm.id,
                 "media_player": test_alarm.media_player,
+                "card": build_alarm_card(
+                    hass,
+                    highlight_alarm={
+                        "time": test_alarm.time,
+                        "label": test_alarm.name,
+                        "days": "Probando sonido",
+                        "media_player": test_alarm.media_player,
+                    },
+                    action="testing",
+                ),
                 "instruction": "Ask the user if they can hear the alarm playing clearly.",
             }
 
@@ -832,6 +1059,16 @@ class TestAlarmTool(BaseAlarmTool):
                 "status": "playing",
                 "media_player": media_player,
                 "sound_uri": sound_uri,
+                "card": build_alarm_card(
+                    hass,
+                    highlight_alarm={
+                        "time": "Test",
+                        "label": "Tono de alarma",
+                        "days": "Probando sonido",
+                        "media_player": media_player,
+                    },
+                    action="testing",
+                ),
                 "instruction": "Ask the user if they can hear the alarm playing clearly.",
             }
         except Exception as e:
