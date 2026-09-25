@@ -3,6 +3,11 @@
 DOMAIN = "voice_satellite_llm_tools"
 ADDON_NAME = "Voice Satellite LLM Tools"
 WEATHER_ICONS_PATH = f"/api/{DOMAIN}/weather_icons"
+FRONTEND_PATH = f"/api/{DOMAIN}/frontend"
+ALARM_CARD_FILENAME = "voice-satellite-alarm-card.js"
+ALARM_CARD_URL = f"{FRONTEND_PATH}/{ALARM_CARD_FILENAME}"
+VERSION = "1.5.0"
+
 
 # Tool type selection
 CONF_TOOL_TYPE = "tool_type"

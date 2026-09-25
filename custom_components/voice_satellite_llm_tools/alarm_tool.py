@@ -387,33 +387,31 @@ def build_alarm_card(
     highlight_alarm: dict | None = None,
     action: str = "scheduled",
 ) -> dict:
-    """Build a modern, original Lovelace card config for Voice Satellite card media panel."""
+    """Build the official Lovelace card config for Voice Satellite card media panel."""
     dismiss_voice_satellite_screensavers(hass)
-    if action == "list" or (alarm_entries is not None and highlight_alarm is None):
-        html = _render_alarm_list_html(alarm_entries)
-    else:
-        # Default or single alarm hero view
-        if highlight_alarm is None:
-            wakey_data = get_wakey_data(hass)
-            alarms = wakey_data.store.async_all() if wakey_data else []
-            if alarms:
-                first = alarms[0]
-                highlight_alarm = {
-                    "time": first.time,
-                    "label": first.name,
-                    "repeat": first.repeat,
-                    "weekdays": first.weekdays,
-                    "media_player": first.media_player,
-                }
-        html = _render_alarm_hero_html(highlight_alarm, action)
+    is_list = action == "list" or (alarm_entries is not None and highlight_alarm is None)
+
+    if not is_list and highlight_alarm is None:
+        wakey_data = get_wakey_data(hass)
+        alarms = wakey_data.store.async_all() if wakey_data else []
+        if alarms:
+            first = alarms[0]
+            highlight_alarm = {
+                "time": first.time,
+                "label": first.name,
+                "repeat": first.repeat,
+                "weekdays": first.weekdays,
+                "media_player": first.media_player,
+            }
 
     return {
-        "type": "markdown",
-        "card_mod": {
-            "style": "ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }"
-        },
-        "content": html,
+        "type": "custom:voice-satellite-alarm-card",
+        "mode": "list" if is_list else "hero",
+        "alarm": highlight_alarm,
+        "alarms": alarm_entries,
+        "action": action,
     }
+
 
 
 
