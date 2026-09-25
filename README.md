@@ -17,7 +17,7 @@
 > [!NOTE]
 > This repository is a maintained fork of [jxlarrea/voice-satellite-card-llm-tools](https://github.com/jxlarrea/voice-satellite-card-llm-tools) by [@jxlarrea](https://github.com/jxlarrea).
 > 
-> **RhythmCreative enhancements:**
+> **Enhancements:**
 > - **Full Alexa-like Voice Alarms** powered by [Wakey](https://github.com/rhythmcreative/wakey) (`set_alarm`, `list_alarms`, `cancel_alarm`, `snooze_alarm`, `stop_alarm`, `adjust_alarm`, `test_alarm`).
 > - **Native Smart Display UI**: Redesigned borderless digital clock hero cards and list cards aligned with Voice Satellite's Google Nest Hub design language.
 > - **Hands-Free Stop & Snooze**: Saying "stop" or "snooze" silences and dismisses any active ringing alarm without requiring an alarm ID.
