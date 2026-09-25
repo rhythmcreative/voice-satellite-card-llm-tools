@@ -118,7 +118,7 @@ def test_set_alarm_tool():
 
     mock_wakey = MagicMock()
     mock_wakey.store.async_create.return_value = mock_alarm
-    mock_wakey.store.async_all.return_value = [mock_alarm]
+    mock_wakey.store.async_all.return_value = []
     hass.data = {"wakey": {"entry_1": mock_wakey}}
 
     tool = SetAlarmTool({}, hass)
@@ -144,6 +144,38 @@ def test_set_alarm_tool():
     assert payload["repeat"] == "weekly"
     assert payload["weekdays"] == [0, 1]
     assert payload["volume"] == 0.8
+
+
+def test_set_alarm_duplicate_prevention():
+    """Test that setting an alarm for an existing time returns already_exists and does not duplicate."""
+    hass = MagicMock()
+    hass.states.async_all.return_value = []
+    hass.states.get.return_value = None
+
+    existing_alarm = MagicMock()
+    existing_alarm.id = "alarm_existing"
+    existing_alarm.name = "Work"
+    existing_alarm.time = "07:30"
+    existing_alarm.repeat = "weekly"
+    existing_alarm.weekdays = [0, 1]
+    existing_alarm.enabled = True
+    existing_alarm.media_player = "media_player.bedroom"
+
+    mock_wakey = MagicMock()
+    mock_wakey.store.async_all.return_value = [existing_alarm]
+    hass.data = {"wakey": {"entry_1": mock_wakey}}
+
+    tool = SetAlarmTool({}, hass)
+    tool_input = MagicMock()
+    tool_input.tool_args = {
+        "time": "07:30",
+        "days": ["monday", "tuesday"],
+    }
+
+    result = run_async(tool.async_call(hass, tool_input, MagicMock()))
+    assert result["status"] == "already_exists"
+    assert result["alarm_id"] == "alarm_existing"
+    mock_wakey.store.async_create.assert_not_called()
 
 
 def test_list_alarms_tool():

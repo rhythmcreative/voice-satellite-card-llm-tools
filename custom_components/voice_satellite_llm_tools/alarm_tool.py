@@ -283,9 +283,7 @@ class SetAlarmTool(BaseAlarmTool):
             )
         )
 
-        now_utc = dt_util.utcnow()
-        tz = hass.config.as_time_zone()
-        now_local = now_utc.astimezone(tz)
+        now_local = dt_util.now()
 
         if weekdays:
             repeat = "weekly"
@@ -297,6 +295,36 @@ class SetAlarmTool(BaseAlarmTool):
                 date_str = (now_local.date() + timedelta(days=1)).isoformat()
             else:
                 date_str = now_local.date().isoformat()
+
+        wakey_data = self._get_wakey()
+        if wakey_data:
+            for a in wakey_data.store.async_all():
+                if a.time == time_formatted:
+                    if (weekdays and a.weekdays == weekdays) or (not weekdays and a.repeat == "once"):
+                        if a.enabled:
+                            return {
+                                "status": "already_exists",
+                                "alarm_id": a.id,
+                                "time": time_formatted,
+                                "label": a.name,
+                                "repeat": a.repeat,
+                                "days": ", ".join(WEEKDAY_NAMES_EN[d] for d in weekdays) if weekdays else (date_str or "next occurrence"),
+                                "media_player": a.media_player or media_player,
+                                "card": build_alarm_card(hass),
+                                "instruction": f"Inform the user that an alarm is already configured for {time_formatted}.",
+                            }
+                        wakey_data.store.async_update(a.id, {"enabled": True})
+                        return {
+                            "status": "reactivated",
+                            "alarm_id": a.id,
+                            "time": time_formatted,
+                            "label": a.name,
+                            "repeat": a.repeat,
+                            "days": ", ".join(WEEKDAY_NAMES_EN[d] for d in weekdays) if weekdays else (date_str or "next occurrence"),
+                            "media_player": a.media_player or media_player,
+                            "card": build_alarm_card(hass),
+                            "instruction": f"Confirm that the existing alarm for {time_formatted} has been re-enabled.",
+                        }
 
         payload = {
             "name": label,
@@ -315,7 +343,6 @@ class SetAlarmTool(BaseAlarmTool):
         if date_str:
             payload["date"] = date_str
 
-        wakey_data = self._get_wakey()
         created_alarm = None
 
         if wakey_data:
