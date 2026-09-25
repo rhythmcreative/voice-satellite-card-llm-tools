@@ -767,7 +767,12 @@ class SnoozeAlarmTool(BaseAlarmTool):
                     "status": "not_ringing",
                     "message": "No alarm is currently ringing to snooze.",
                 }
-            await wakey_data.player.async_snooze(alarm_id, minutes=minutes)
+            ringing_ids = list(wakey_data.player.ringing.keys())
+            if not alarm_id and ringing_ids:
+                for rid in ringing_ids:
+                    await wakey_data.player.async_snooze(rid, minutes=minutes)
+            else:
+                await wakey_data.player.async_snooze(alarm_id, minutes=minutes)
             return {
                 "status": "snoozed",
                 "minutes": minutes,
@@ -828,7 +833,12 @@ class StopAlarmTool(BaseAlarmTool):
                     "status": "not_ringing",
                     "message": "No alarm is currently ringing.",
                 }
-            await wakey_data.player.async_dismiss(alarm_id)
+            ringing_ids = list(wakey_data.player.ringing.keys())
+            if not alarm_id and ringing_ids:
+                for rid in ringing_ids:
+                    await wakey_data.player.async_dismiss(rid)
+            else:
+                await wakey_data.player.async_dismiss(alarm_id)
             return {
                 "status": "stopped",
                 "message": "Alarm stopped.",
